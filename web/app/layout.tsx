@@ -15,11 +15,21 @@ const display = Barlow_Condensed({
   display: "swap",
 });
 
+const DESCRIPTION =
+  "A private research service that sends one Telegram briefing a day. Python computes and checks every figure. This showcase runs the real pipeline on synthetic demo data.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://goldirham-lens.vercel.app"),
   title: "Goldirham Lens · Numbers before narrative",
-  description:
-    "A private research service that sends one Telegram briefing a day. Python computes and checks every figure. This showcase runs the real pipeline on synthetic demo data.",
+  description: DESCRIPTION,
   robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    title: "Goldirham Lens · Numbers before narrative",
+    description: DESCRIPTION,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Numbers before narrative. Demo data, synthetic market." }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
 };
 
 export const viewport: Viewport = {

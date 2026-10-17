@@ -8,6 +8,7 @@
 | Webhook endpoint | Telegram | `webhook.py` compares the `X-Telegram-Bot-Api-Secret-Token` header with `TELEGRAM_WEBHOOK_SECRET` using `hmac.compare_digest` and returns 401 before parsing the body. |
 | One-tap confirmations | The owner, once | A random 16-character token in `pending_actions`, consumed by a single `UPDATE ... WHERE consumed_at IS NULL AND expires_at > now()`. It expires after 15 minutes. |
 | Production schema changes | The owner, by approval | Only `migrate.yml` runs migrations, behind the `production` environment's required reviewer. |
+| Private dashboard | The owner, after Telegram sign-in | `dashboard/auth.py` checks Telegram's HMAC-SHA256 signature (keyed by SHA-256 of the bot token), requires the owner's id and a signature under 10 minutes old, then sets an HttpOnly, SameSite=Lax cookie signed with `DASHBOARD_SESSION_SECRET` for 12 hours. Every other page redirects to sign-in, and a test walks every route with no cookie, a forged cookie and another user's cookie. |
 | Restore drills | The job-local database | `ops/backup.py` `ensure_drill_target` refuses any host other than localhost, any database other than `lens_drill` after percent-decoding, and URL parameters that redirect the connection. |
 
 ## Secrets
@@ -23,6 +24,7 @@
 | `ALPHA_VANTAGE_API_KEY`, `ANTHROPIC_API_KEY` | GitHub | daily, backfill, alerts |
 | `AGE_RECIPIENT` | GitHub | backup |
 | `AGE_IDENTITY` | GitHub, read only in the restore-drill job, plus an offline copy | restore drill |
+| `DASHBOARD_DATABASE_URL`, `DASHBOARD_SESSION_SECRET`, `TELEGRAM_BOT_USERNAME` | The dashboard's own Vercel project | dashboard |
 
 - `lens.logs` redacts every configured secret value and known secret shapes (Telegram tokens, Anthropic keys, GitHub tokens, database passwords in URLs, Healthchecks URLs) from structured logs, stdlib logs and tracebacks.
 - An empty environment value counts as unset, so a missing GitHub secret reads as missing rather than as an empty password.
@@ -34,6 +36,7 @@
 | --- | --- | --- |
 | `postgres` | `migrate.yml` | Change the schema |
 | `lens_app` | Daily job, webhook | Select, insert, update and delete rows; nothing else |
+| `lens_dashboard` | Dashboard | Select only. The dashboard also runs every request inside `SET TRANSACTION READ ONLY` and rolls it back. |
 | `anon`, `authenticated` | Supabase's public API | Nothing; the runbook revokes their grants |
 
 ## Workflows
@@ -53,6 +56,10 @@
 | Healthchecks.io | Success and failure pings, with a short error class on failure |
 
 Daily briefings are not uploaded as workflow artifacts, because they contain portfolio values. The database already stores them.
+
+## Dashboard pages
+
+The dashboard renders HTML on the server. Pages carry no secrets, are sent with `Cache-Control: no-store` and `X-Robots-Tag: noindex`, and use a Content Security Policy that allows only Telegram's login script and frame. Stored Telegram text is re-escaped so only bold, italic and code markup survives.
 
 ## Showcase
 

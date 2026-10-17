@@ -24,9 +24,16 @@ class Database:
     """One engine per process. `pooled=True` suits PgBouncer/Supavisor transaction pooling."""
 
     def __init__(
-        self, url: str, *, pooled: bool = False, echo: bool = False, rollback_only: bool = False
+        self,
+        url: str,
+        *,
+        pooled: bool = False,
+        echo: bool = False,
+        rollback_only: bool = False,
+        read_only: bool = False,
     ) -> None:
-        self.rollback_only = rollback_only
+        self.rollback_only = rollback_only or read_only
+        self.read_only = read_only
         connect_args: dict[str, object] = {
             "server_settings": {"application_name": "goldirham-lens"}
         }
@@ -48,9 +55,12 @@ class Database:
         """A unit of work: commits on success, rolls back on any error.
 
         With `rollback_only`, every unit of work rolls back, so a preview reads but never writes.
+        With `read_only`, PostgreSQL also refuses any write inside the transaction.
         """
         async with self._sessions() as session:
             transaction = await session.begin()
+            if self.read_only:
+                await session.execute(text("SET TRANSACTION READ ONLY"))
             try:
                 yield session
             except BaseException:

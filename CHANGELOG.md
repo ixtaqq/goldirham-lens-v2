@@ -2,6 +2,17 @@
 
 All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet.
 
+## Unreleased: optional pieces (2026-10-17)
+
+### Added
+
+- **Private dashboard.** An owner-only FastAPI app (`lens.dashboard`, `api/dashboard.py`) with a briefing archive, portfolio history, signal explorer, backtest reports and health. It uses Telegram Login Widget sign-in, verified on the server, and a signed 12-hour session cookie. It reads through a `SELECT`-only role inside read-only transactions. See ADR 0011 and runbook step 13.
+- **Brand loop and social card.** A Remotion package in `video/` renders a seamless 15-second loop (`docs/media/brand-loop.mp4`, `.webm`) and the 1200 by 630 Open Graph image (`web/public/og.png`), from the demo fixture and the site's field and mark geometry. See ADR 0012.
+- `Database(read_only=True)` runs each unit of work inside `SET TRANSACTION READ ONLY` and rolls it back.
+- A fifth import contract keeps the dashboard away from the data layer, pipeline, narrative, bot and outbound HTTP.
+- `main` is the default branch, created at the green foundation commit.
+- The showcase is live at https://goldirham-lens.vercel.app from the Vercel project `goldirham-lens` (root `web`, production branch `main`).
+
 ## Unreleased: v2.0 foundation (2026-10-16)
 
 ### Added

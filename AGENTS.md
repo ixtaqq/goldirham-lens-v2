@@ -19,6 +19,7 @@ Windows PowerShell 5.1 is the default shell. Chain with `;`, not `&&`.
 | Preview a briefing, no writes, no send | `python -m uv run lens cycle run --dry-run` |
 | Regenerate showcase data | `python -m uv run lens demo export` |
 | Showcase checks | `cd web; npm ci; npm run lint; npm run typecheck; npm test; npm run build; npm run test:e2e` |
+| Re-render the brand loop and social card | `cd video; npm ci; npm run render` |
 
 Tests only run against databases whose name starts with `lens_test`.
 

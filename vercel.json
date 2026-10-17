@@ -4,7 +4,20 @@
     "api/telegram.py": {
       "maxDuration": 30,
       "includeFiles": "{src/**,config/**}"
+    },
+    "api/dashboard.py": {
+      "maxDuration": 15,
+      "includeFiles": "{src/**,config/**}"
     }
   },
-  "rewrites": [{ "source": "/api/health", "destination": "/api/telegram" }]
+  "rewrites": [
+    {
+      "source": "/api/health",
+      "destination": "/api/telegram"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/api/dashboard"
+    }
+  ]
 }

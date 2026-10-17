@@ -28,6 +28,8 @@ web/playwright-report/
 web/.vercel/
 web/next-env.d.ts
 web/*.tsbuildinfo
+video/node_modules/
+video/out/
 .vercel/
 
 # impeccable review captures are regenerated per review

@@ -1,0 +1,26 @@
+{
+  "name": "goldirham-lens-video",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Rendered brand loop and social card, drawn from the showcase's demo fixture.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "render:mp4": "remotion render src/index.ts BrandLoop ../docs/media/brand-loop.mp4 --codec=h264 --crf=20",
+    "render:webm": "remotion render src/index.ts BrandLoop ../docs/media/brand-loop.webm --codec=vp8",
+    "render:card": "remotion still src/index.ts SocialCard ../web/public/og.png",
+    "render": "npm run render:mp4 && npm run render:webm && npm run render:card"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.532",
+    "@remotion/google-fonts": "4.0.532",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}
