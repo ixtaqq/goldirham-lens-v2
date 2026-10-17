@@ -10,35 +10,51 @@ test("motion holds its frame budget under 4x CPU throttling @chromium-only", asy
 
   const result = await page.evaluate(
     () =>
-      new Promise<{ fps: number; longTasks: number; worst: number }>((resolve) => {
-        const longTasks: number[] = [];
-        const observer = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) longTasks.push(entry.duration);
-        });
-        observer.observe({ type: "longtask", buffered: false });
-        const stamps: number[] = [];
+      new Promise<{ fps: number; longTasks: string[]; frames: string[] }>((resolve) => {
         const start = performance.now();
+        const at = (t: number) => Math.round(t - start);
+        const longTasks: string[] = [];
+        const frames: string[] = [];
+        const tasks = new PerformanceObserver((list) => {
+          for (const e of list.getEntries()) longTasks.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms`);
+        });
+        tasks.observe({ type: "longtask", buffered: false });
+        // Long Animation Frames name the scripts behind a slow frame, so a failure says what caused it.
+        type Script = { invoker: string; sourceURL: string; sourceFunctionName: string; duration: number };
+        type Frame = PerformanceEntry & { styleAndLayoutStart: number; renderStart: number; scripts: Script[] };
+        const loaf = new PerformanceObserver((list) => {
+          for (const e of list.getEntries() as Frame[]) {
+            if (e.duration <= 50) continue;
+            const scripts = e.scripts
+              .map((s) => `${s.invoker} ${s.sourceURL.split("/").pop() || "(inline)"}:${s.sourceFunctionName} ${Math.round(s.duration)}ms`)
+              .join(", ");
+            const render = e.renderStart ? Math.round(e.startTime + e.duration - e.renderStart) : 0;
+            frames.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms, render ${render}ms, scripts [${scripts}]`);
+          }
+        });
+        if (PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")) {
+          loaf.observe({ type: "long-animation-frame", buffered: false });
+        }
+        const stamps: number[] = [];
         const tick = (now: number) => {
           stamps.push(now);
           window.scrollBy(0, 6);
           if (now - start < 3000) requestAnimationFrame(tick);
           else {
-            observer.disconnect();
-            const gaps = stamps.slice(1).map((t, i) => t - (stamps[i] ?? t));
-            resolve({
-              fps: (stamps.length - 1) / ((now - start) / 1000),
-              longTasks: longTasks.length,
-              worst: Math.max(0, ...gaps),
-            });
+            tasks.disconnect();
+            loaf.disconnect();
+            resolve({ fps: (stamps.length - 1) / ((now - start) / 1000), longTasks, frames });
           }
         };
         requestAnimationFrame(tick);
       }),
   );
   test.info().annotations.push({ type: "fps (4x throttle)", description: result.fps.toFixed(1) });
-  test.info().annotations.push({ type: "long tasks", description: String(result.longTasks) });
-  expect(result.fps).toBeGreaterThanOrEqual(45);
-  expect(result.longTasks).toBe(0);
+  test.info().annotations.push({ type: "long tasks", description: result.longTasks.join("; ") || "none" });
+  test.info().annotations.push({ type: "long animation frames", description: result.frames.join("; ") || "none" });
+  const why = `long tasks: ${result.longTasks.join("; ")} | long animation frames: ${result.frames.join("; ")}`;
+  expect(result.fps, why).toBeGreaterThanOrEqual(45);
+  expect(result.longTasks, why).toEqual([]);
 });
 
 test("layout never shifts while motion runs", async ({ page }) => {
