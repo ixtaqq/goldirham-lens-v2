@@ -11,6 +11,7 @@ import {
   verifyPulse,
   type TraceLayout,
 } from "@/lib/field";
+import { MARK_FRAME, MARK_VIEWBOX } from "@/lib/mark";
 import { MOTION_ENABLED } from "@/lib/motion-pref";
 
 import { MOTION_EVENT } from "./MotionToggle";
@@ -303,8 +304,9 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
       if (!frameSvg) return null;
       const rect = frameSvg.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > height) return null;
-      const unit = rect.width / 120;
-      return { x: rect.left + 46 * unit, y: rect.top + 22 * unit, w: 52 * unit, h: 52 * unit };
+      const unit = rect.width / MARK_VIEWBOX;
+      const size = MARK_FRAME.size * unit;
+      return { x: rect.left + MARK_FRAME.x * unit, y: rect.top + MARK_FRAME.y * unit, w: size, h: size };
     };
 
     const tick = (now: number) => {

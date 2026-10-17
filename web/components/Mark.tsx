@@ -1,14 +1,13 @@
 // The brand mark: a square verification frame crossed by a stepped trace. The part of the trace
 // inside the frame is mint, because that is where the data was checked.
 
-const TRACE = "M4 96 H24 V80 H40 V86 H54 V60 H70 V48 H84 V30 H116";
-const FRAME = { x: 46, y: 22, size: 52 };
+import { MARK_FRAME as FRAME, MARK_TRACE as TRACE, MARK_VIEWBOX } from "@/lib/mark";
 
 export function Mark({ id, className, title }: { id: string; className?: string; title?: string }) {
   const clip = `${id}-clip`;
   return (
     <svg
-      viewBox="0 0 120 120"
+      viewBox={`0 0 ${MARK_VIEWBOX} ${MARK_VIEWBOX}`}
       className={className}
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}

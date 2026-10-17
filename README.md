@@ -1,5 +1,7 @@
 # Goldirham Lens v2
 
+![Numbers before narrative. Demo data, synthetic market.](web/public/og.png)
+
 **Numbers before narrative.** A private research service for one long-horizon investor in
 Malaysia. Every morning it collects public market data for crypto, US stocks and ETFs, and
 Bursa Malaysia stocks, verifies it, computes indicators, setups, holding reviews and portfolio
@@ -20,6 +22,7 @@ There is no server to maintain.
 | Data | Managed PostgreSQL (Supabase free tier by default) |
 | Missed-run alert | Healthchecks.io dead-man's switch |
 | Showcase website | Vercel (`web/`) |
+| Private dashboard (optional) | A second Vercel project (`api/dashboard.py`) |
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the components and contracts, and
 [docs/RUNBOOK.md](docs/RUNBOOK.md) for setup and operations.
@@ -60,6 +63,15 @@ npm run test:e2e
 
 The motion layer (signal field, hero sequence, pinned pipeline, day switcher) can be switched off
 at build time with `NEXT_PUBLIC_MOTION=off`; the page is complete without it.
+
+The brand loop ([MP4](docs/media/brand-loop.mp4), [WebM](docs/media/brand-loop.webm)) and the
+social card are rendered from the same demo data with Remotion:
+
+```powershell
+cd video
+npm ci
+npm run render
+```
 
 ## Documentation
 
