@@ -187,6 +187,11 @@ class Secrets(BaseSettings):
     healthcheck_ping_url: SecretStr | None = None
     anthropic_api_key: SecretStr | None = None
     alpha_vantage_api_key: SecretStr | None = None
+    # Private dashboard: a read-only database role, its own cookie key, and the bot's public name
+    # for the Telegram Login Widget.
+    dashboard_database_url: SecretStr | None = None
+    dashboard_session_secret: SecretStr | None = None
+    telegram_bot_username: str | None = None
 
     def secret_values(self) -> list[str]:
         """Every configured secret value, used by the log redactor."""

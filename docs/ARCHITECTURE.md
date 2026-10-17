@@ -14,6 +14,7 @@ Nothing runs on a server the owner maintains.
 | Missed-run alert | Healthchecks.io | No success ping by 08:15 MYT |
 | Backups and restore drills | GitHub Actions `backup.yml`, `restore-drill.yml` | Cron |
 | Showcase | Vercel project for `web/` | Push to `main` |
+| Private dashboard (optional) | A second Vercel project for `api/dashboard.py` | The owner's browser, after Telegram sign-in |
 
 GitHub can start a scheduled run late or skip it. Two triggers, one database lock per day, and the Healthchecks dead-man's switch together make a missed or doubled briefing unlikely and loud. [ADR 0001](adr/0001-serverless-architecture.md) records the choice.
 
@@ -70,11 +71,12 @@ src/lens/
   narrative/   optional AI: schema, prompt, placeholder verifier, budgeted service
   backtest/    replay engine and report
   ops/         doctor, health pings, backup manifest and restore guard, alert jobs
+  dashboard/   owner-only FastAPI pages: Telegram sign-in, read-only queries, server-rendered HTML
   webhook.py   FastAPI app for Telegram updates
   cli.py       the `lens` command
 ```
 
-`import-linter` enforces four contracts in `pyproject.toml`. The domain imports nothing else from `lens` and no I/O library. The backtest imports only the domain. The bot, delivery and webhook never import the data layer, the pipeline, numpy or pandas, which keeps the Vercel function small.
+`import-linter` enforces five contracts in `pyproject.toml`. The domain imports nothing else from `lens` and no I/O library. The backtest imports only the domain. The bot, delivery and webhook never import the data layer, the pipeline, numpy or pandas, which keeps the Vercel function small. The dashboard reads stored data only: no data layer, pipeline, narrative, bot or outbound HTTP ([ADR 0011](adr/0011-private-dashboard.md)).
 
 ## Typed contracts between stages
 

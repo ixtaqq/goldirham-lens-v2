@@ -117,6 +117,35 @@ Read the report first. The first report found that the v1 rules did not beat ran
 
 Create a second Vercel project from the same repository with the root directory set to `web`. It needs no environment variables and never connects to anything.
 
+### 13. Set up the private dashboard (optional)
+
+The dashboard is a second Vercel project built from the same repository. It reads through its own read-only database role and accepts only your Telegram account.
+
+1. In the Supabase SQL editor, create the read-only role:
+
+   ```sql
+   create role lens_dashboard login password '<a long random password>';
+   grant usage on schema public to lens_dashboard;
+   grant select on all tables in schema public to lens_dashboard;
+   alter default privileges for role postgres in schema public grant select on tables to lens_dashboard;
+   ```
+
+2. In @BotFather, send `/setdomain`, choose the bot, and enter the dashboard's domain (for example `goldirham-dashboard.vercel.app`). The Telegram login button only works on that domain.
+3. Create a second Vercel project from the repository, with the root directory as the repository root and the framework preset **Other**.
+4. Add only these environment variables to it. Leave out every webhook and GitHub variable: the webhook function deployed alongside then stops before reading any update, and the dashboard's role cannot write.
+
+   | Variable | Value |
+   | --- | --- |
+   | `DASHBOARD_DATABASE_URL` | Transaction pooler string with the `lens_dashboard` user |
+   | `DASHBOARD_SESSION_SECRET` | At least 32 random characters, used only to sign the session cookie |
+   | `TELEGRAM_BOT_TOKEN` | The bot token, used only to check Telegram's sign-in signature |
+   | `TELEGRAM_BOT_USERNAME` | The bot's username, without the `@` |
+   | `OWNER_TELEGRAM_ID` | Your owner id |
+
+5. Deploy, open the project's URL, and sign in with Telegram. A session lasts 12 hours.
+
+If any variable is missing, every page answers 503 rather than opening.
+
 ## Daily operations
 
 These times apply once `SCHEDULES_ENABLED` is `true` (step 10).

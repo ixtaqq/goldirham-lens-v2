@@ -156,6 +156,15 @@ forbidden_modules = [
     "numpy", "pandas", "exchange_calendars", "yfinance", "anthropic", "feedparser",
 ]
 
+[[tool.importlinter.contracts]]
+name = "Dashboard only reads stored data"
+type = "forbidden"
+source_modules = ["lens.dashboard"]
+forbidden_modules = [
+    "lens.data", "lens.pipeline", "lens.narrative", "lens.bot", "lens.ops", "lens.webhook",
+    "httpx", "yfinance", "anthropic", "pandas", "numpy",
+]
+
 # ---------------------------------------------------------------- tasks
 [tool.poe.tasks]
 fmt = "ruff format src tests migrations scripts api"
