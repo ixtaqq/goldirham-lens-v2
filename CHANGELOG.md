@@ -24,6 +24,8 @@ All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet
 - The narrative refuses to run while `narrative.rates_verified_on` is unset, so it cannot spend money at unchecked prices.
 - `ci.yml` checked the demo export with `git diff` without regenerating it. It now runs `lens demo export --check`.
 - README pointed the test database at `lens`, which the test fixture refuses. It now points at `lens_test`.
+- The content-parity end-to-end test ran out of time in WebKit on CI. Parity and section screenshots are now separate tests.
+- Cron runs of the five scheduled workflows skip until the repository variable `SCHEDULES_ENABLED` is `true` (runbook step 10). Manual runs are unaffected.
 
 ### Known limits
 
@@ -34,7 +36,7 @@ All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet
 
 ### Verification
 
-Run locally on Windows 11, 2026-10-16. Nothing here has run in CI yet.
+Run locally on Windows 11, 2026-10-16 and 2026-10-17. In the first CI run, the Python and repository jobs passed and the web job failed on the WebKit timeout fixed above.
 
 | Check | Command | Result |
 | --- | --- | --- |
@@ -43,7 +45,7 @@ Run locally on Windows 11, 2026-10-16. Nothing here has run in CI yet.
 | Workflows | `actionlint 1.7.12` | Exit 0 |
 | Web lint and types | `npm run lint`, `npm run typecheck` | Exit 0 |
 | Web unit tests | `npm test` | 22 passed |
-| End-to-end tests | `npm run test:e2e` (Chromium, mobile Chromium, WebKit, then performance on its own) | 46 passed |
+| End-to-end tests | `npm run test:e2e` (Chromium, mobile Chromium, WebKit, then performance on its own) | 55 passed |
 | Static page without motion | `NEXT_PUBLIC_MOTION=off` build, then the content and accessibility specs | 27 passed |
 | Lighthouse 13.5, motion on, gzip-serving local export | Node API against Playwright Chromium | Mobile: performance 98, accessibility 100, best practices 100, LCP 2.4 s, CLS 0. Desktop: 100, 100, 100. |
 | Frame budget | 4x CPU throttling in Chromium while scrolling | About 60 fps, no long tasks |

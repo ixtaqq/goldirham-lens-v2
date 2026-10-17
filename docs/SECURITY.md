@@ -40,7 +40,8 @@
 
 - Every workflow sets `permissions: contents: read` at the top and raises it per job only where needed (`actions: read` for the restore drill, `issues: write` for the drift check).
 - Third-party actions are pinned to commit SHAs.
-- No workflow uses `pull_request_target`. Scheduled and dispatched jobs run only on `main`.
+- No workflow uses `pull_request_target`. The daily briefing and holding alerts run only on `main`.
+- Cron runs of the five scheduled workflows skip unless the repository variable `SCHEDULES_ENABLED` is `true`.
 
 ## Data that leaves the service
 

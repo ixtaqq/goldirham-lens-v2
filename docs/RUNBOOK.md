@@ -93,9 +93,15 @@ Run **Actions > Migrate production schema** with `migrate` typed in the box. It 
 
 ### 9. Send the first briefing
 
-Run **Actions > Daily briefing > Run workflow**. **This sends a real Telegram message.** The briefing arrives within a few minutes. From the next morning on, it arrives every day before 08:00 MYT.
+Run **Actions > Daily briefing > Run workflow** on `main`. **This sends a real Telegram message.** The briefing arrives within a few minutes.
 
-### 10. Decide whether a strategy goes live
+### 10. Turn on the schedules
+
+Cron runs of the daily briefing, backup, restore drill, holding alerts and provider drift check skip every job until a repository variable allows them. Manual runs work either way. Until the variable is set, each cron run shows as skipped rather than failed.
+
+In **Settings > Secrets and variables > Actions > Variables**, add `SCHEDULES_ENABLED` with the value `true`. **This turns on the daily briefing and the nightly jobs.** From the next morning on, the briefing arrives every day before 08:00 MYT. To pause every schedule later, set the variable to anything else.
+
+### 11. Decide whether a strategy goes live
 
 No strategy is live until you activate a version that has a backtest report. The briefing says so in its data status.
 
@@ -107,11 +113,13 @@ python -m uv run lens strategy activate pullback_in_uptrend <version>
 
 Read the report first. The first report found that the v1 rules did not beat random entries with the same stops and targets ([ADR 0005](adr/0005-backtest-and-activation.md)). Activating anyway is your call.
 
-### 11. Publish the showcase
+### 12. Publish the showcase
 
 Create a second Vercel project from the same repository with the root directory set to `web`. It needs no environment variables and never connects to anything.
 
 ## Daily operations
+
+These times apply once `SCHEDULES_ENABLED` is `true` (step 10).
 
 | Time (MYT) | What runs | What you see |
 | --- | --- | --- |

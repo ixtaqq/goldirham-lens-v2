@@ -4,16 +4,11 @@ import { mainText, openIn, SECTIONS, type Mode } from "./helpers";
 
 const modes: Mode[] = ["default", "reduced", "nojs"];
 
-test("content and reading order are identical with motion, reduced motion and no JavaScript", async ({ browser }, info) => {
+test("content and reading order are identical with motion, reduced motion and no JavaScript", async ({ browser }) => {
   const texts: Record<string, string> = {};
   for (const mode of modes) {
     const { context, page } = await openIn(browser, mode);
     texts[mode] = await mainText(page);
-    for (const id of SECTIONS) {
-      const section = page.locator(`#${id}`);
-      await section.scrollIntoViewIfNeeded();
-      await info.attach(`${mode}-${id}.png`, { body: await section.screenshot(), contentType: "image/png" });
-    }
     await context.close();
   }
   expect(texts.default).toContain("Numbers before narrative.");
@@ -21,6 +16,21 @@ test("content and reading order are identical with motion, reduced motion and no
   expect(texts.reduced).toBe(texts.default);
   expect(texts.nojs).toBe(texts.default);
 });
+
+for (const mode of modes) {
+  test(`every section renders and is captured (${mode})`, async ({ browser }, info) => {
+    // Eight full-section captures; WebKit on a shared CI runner needs more than the default 30s.
+    test.setTimeout(90_000);
+    const { context, page } = await openIn(browser, mode);
+    for (const id of SECTIONS) {
+      const section = page.locator(`#${id}`);
+      await section.scrollIntoViewIfNeeded();
+      await expect(section).toBeVisible();
+      await info.attach(`${mode}-${id}.png`, { body: await section.screenshot(), contentType: "image/png" });
+    }
+    await context.close();
+  });
+}
 
 test("every figure on the page is labelled as demo data", async ({ page }) => {
   await page.goto("/");

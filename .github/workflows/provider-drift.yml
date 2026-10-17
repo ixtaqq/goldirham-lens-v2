@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   live-providers:
+    # Cron runs wait for the SCHEDULES_ENABLED repository variable; manual dispatch always runs.
+    if: (github.event_name != 'schedule' || vars.SCHEDULES_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     continue-on-error: true
