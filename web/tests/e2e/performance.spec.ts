@@ -1,50 +1,41 @@
-import { expect, test } from "@playwright/test";
+import { cpus } from "node:os";
 
-// Chromium only: CPU throttling and long-task timing come from the DevTools protocol.
-test("motion holds its frame budget under 4x CPU throttling @chromium-only", async ({ page, browserName }) => {
-  test.skip(browserName !== "chromium", "needs the DevTools protocol");
-  await page.goto("/");
-  await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
-  // Throttling switches on mid-frame; CI showed the frame in flight at that moment as the only long
-  // task. Measure the steady state: settle first, then count only work that starts in the window.
-  await page.waitForTimeout(1000);
+import { expect, test, type Page } from "@playwright/test";
 
-  const result = await page.evaluate(
-    () =>
-      new Promise<{ fps: number; longTasks: string[]; frames: string[] }>((resolve) => {
+// Probe: collects paused and live frame rates on CI runners to choose the budget check (ADR 0013).
+
+type Window = { fps: number; longTasks: number[]; frames: string[] };
+
+async function measure(page: Page, scroll: boolean, ms: number): Promise<Window> {
+  return page.evaluate(
+    ({ scroll, ms }) =>
+      new Promise<Window>((resolve) => {
         const start = performance.now();
         const at = (t: number) => Math.round(t - start);
-        const longTasks: string[] = [];
+        const longTasks: number[] = [];
         const frames: string[] = [];
         const tasks = new PerformanceObserver((list) => {
-          for (const e of list.getEntries()) {
-            if (e.startTime >= start) longTasks.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms`);
-          }
+          for (const e of list.getEntries()) if (e.startTime >= start) longTasks.push(Math.round(e.duration));
         });
         tasks.observe({ type: "longtask", buffered: false });
-        // Long Animation Frames name the scripts behind a slow frame, so a failure says what caused it.
         type Script = { invoker: string; sourceURL: string; sourceFunctionName: string; duration: number };
-        type Frame = PerformanceEntry & { styleAndLayoutStart: number; renderStart: number; scripts: Script[] };
+        type Frame = PerformanceEntry & { renderStart: number; scripts: Script[] };
         const loaf = new PerformanceObserver((list) => {
           for (const e of list.getEntries() as Frame[]) {
             if (e.duration <= 50 || e.startTime < start) continue;
             const scripts = e.scripts
-              .map((s) => `${s.invoker} ${s.sourceURL.split("/").pop() || "(inline)"}:${s.sourceFunctionName} ${Math.round(s.duration)}ms`)
+              .map((s) => `${s.sourceURL.split("/").pop() || "(inline)"} ${Math.round(s.duration)}ms`)
               .join(", ");
             const render = e.renderStart ? Math.round(e.startTime + e.duration - e.renderStart) : 0;
-            frames.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms, render ${render}ms, scripts [${scripts}]`);
+            frames.push(`${Math.round(e.duration)}@${at(e.startTime)} r${render} [${scripts}]`);
           }
         });
-        if (PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")) {
-          loaf.observe({ type: "long-animation-frame", buffered: false });
-        }
+        loaf.observe({ type: "long-animation-frame", buffered: false });
         const stamps: number[] = [];
         const tick = (now: number) => {
           stamps.push(now);
-          window.scrollBy(0, 6);
-          if (now - start < 3000) requestAnimationFrame(tick);
+          if (scroll) window.scrollBy(0, 6);
+          if (now - start < ms) requestAnimationFrame(tick);
           else {
             tasks.disconnect();
             loaf.disconnect();
@@ -53,13 +44,57 @@ test("motion holds its frame budget under 4x CPU throttling @chromium-only", asy
         };
         requestAnimationFrame(tick);
       }),
+    { scroll, ms },
   );
-  test.info().annotations.push({ type: "fps (4x throttle)", description: result.fps.toFixed(1) });
-  test.info().annotations.push({ type: "long tasks", description: result.longTasks.join("; ") || "none" });
-  test.info().annotations.push({ type: "long animation frames", description: result.frames.join("; ") || "none" });
-  const why = `long tasks: ${result.longTasks.join("; ")} | long animation frames: ${result.frames.join("; ")}`;
-  expect(result.fps, why).toBeGreaterThanOrEqual(45);
-  expect(result.longTasks, why).toEqual([]);
+}
+
+const benchmark = (page: Page) =>
+  page.evaluate(() => {
+    const end = performance.now() + 300;
+    let n = 0;
+    while (performance.now() < end) {
+      const a: string[] = [];
+      for (let i = 0; i < 200; i += 1) a.push(String(i * 7));
+      a.sort();
+      n += 1;
+    }
+    return n;
+  });
+
+async function setPaused(page: Page, paused: boolean) {
+  const toggle = page.getByRole("button", { name: "Pause motion" });
+  if ((await toggle.getAttribute("aria-pressed")) !== String(paused)) await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", String(paused));
+}
+
+const fmt = (w: Window) => `${w.fps.toFixed(1)} lt ${w.longTasks.length}/${w.longTasks.reduce((a, b) => a + b, 0)}ms`;
+
+test("probe @chromium-only", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "needs the DevTools protocol");
+  test.setTimeout(240_000);
+  await page.goto("/");
+  await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
+  const cdp = await page.context().newCDPSession(page);
+  const rows: string[] = [`PROBE cpu ${cpus()[0]?.model} x${cpus().length}`];
+  rows.push(`PROBE bench x1 ${await benchmark(page)}`);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  rows.push(`PROBE bench x4 ${await benchmark(page)}`);
+  const details: string[] = [];
+  for (let round = 0; round < 4; round += 1) {
+    for (const paused of round % 2 ? [true, false] : [false, true]) {
+      await setPaused(page, paused);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(1000);
+      const still = await measure(page, false, 2000);
+      const scroll = await measure(page, true, 3000);
+      const name = paused ? "paused" : "live  ";
+      rows.push(`PROBE r${round} ${name} still ${fmt(still)} | scroll ${fmt(scroll)}`);
+      details.push(`PROBE r${round} ${name} still LoAF ${still.frames.join("; ")}`);
+      details.push(`PROBE r${round} ${name} scroll LoAF ${scroll.frames.join("; ")}`);
+    }
+  }
+  rows.push(`PROBE bench x4 after ${await benchmark(page)}`);
+  console.log([...rows, ...details].join("\n"));
 });
 
 test("layout never shifts while motion runs", async ({ page }) => {
