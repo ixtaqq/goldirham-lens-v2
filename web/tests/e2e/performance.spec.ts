@@ -7,6 +7,9 @@ test("motion holds its frame budget under 4x CPU throttling @chromium-only", asy
   await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  // Throttling switches on mid-frame; CI showed the frame in flight at that moment as the only long
+  // task. Measure the steady state: settle first, then count only work that starts in the window.
+  await page.waitForTimeout(1000);
 
   const result = await page.evaluate(
     () =>
@@ -16,7 +19,9 @@ test("motion holds its frame budget under 4x CPU throttling @chromium-only", asy
         const longTasks: string[] = [];
         const frames: string[] = [];
         const tasks = new PerformanceObserver((list) => {
-          for (const e of list.getEntries()) longTasks.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms`);
+          for (const e of list.getEntries()) {
+            if (e.startTime >= start) longTasks.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms`);
+          }
         });
         tasks.observe({ type: "longtask", buffered: false });
         // Long Animation Frames name the scripts behind a slow frame, so a failure says what caused it.
@@ -24,7 +29,7 @@ test("motion holds its frame budget under 4x CPU throttling @chromium-only", asy
         type Frame = PerformanceEntry & { styleAndLayoutStart: number; renderStart: number; scripts: Script[] };
         const loaf = new PerformanceObserver((list) => {
           for (const e of list.getEntries() as Frame[]) {
-            if (e.duration <= 50) continue;
+            if (e.duration <= 50 || e.startTime < start) continue;
             const scripts = e.scripts
               .map((s) => `${s.invoker} ${s.sourceURL.split("/").pop() || "(inline)"}:${s.sourceFunctionName} ${Math.round(s.duration)}ms`)
               .join(", ");
