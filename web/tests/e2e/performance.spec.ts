@@ -2,40 +2,46 @@ import { cpus } from "node:os";
 
 import { expect, test, type Page } from "@playwright/test";
 
-// Probe: collects paused and live frame rates on CI runners to choose the budget check (ADR 0013).
+type Window = { fps: number; longTasks: string[]; frames: string[] };
 
-type Window = { fps: number; longTasks: number[]; frames: string[] };
+const ROUNDS = 5;
 
-async function measure(page: Page, scroll: boolean, ms: number): Promise<Window> {
+/** Scrolls 6px a frame for 3s and records only the work that starts inside that window. */
+function measure(page: Page) {
   return page.evaluate(
-    ({ scroll, ms }) =>
+    () =>
       new Promise<Window>((resolve) => {
         const start = performance.now();
         const at = (t: number) => Math.round(t - start);
-        const longTasks: number[] = [];
+        const longTasks: string[] = [];
         const frames: string[] = [];
         const tasks = new PerformanceObserver((list) => {
-          for (const e of list.getEntries()) if (e.startTime >= start) longTasks.push(Math.round(e.duration));
+          for (const e of list.getEntries()) {
+            if (e.startTime >= start) longTasks.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms`);
+          }
         });
         tasks.observe({ type: "longtask", buffered: false });
+        // Long Animation Frames name the scripts behind a slow frame, so a failure says what caused it.
         type Script = { invoker: string; sourceURL: string; sourceFunctionName: string; duration: number };
-        type Frame = PerformanceEntry & { renderStart: number; scripts: Script[] };
+        type Frame = PerformanceEntry & { styleAndLayoutStart: number; renderStart: number; scripts: Script[] };
         const loaf = new PerformanceObserver((list) => {
           for (const e of list.getEntries() as Frame[]) {
             if (e.duration <= 50 || e.startTime < start) continue;
             const scripts = e.scripts
-              .map((s) => `${s.sourceURL.split("/").pop() || "(inline)"} ${Math.round(s.duration)}ms`)
+              .map((s) => `${s.invoker} ${s.sourceURL.split("/").pop() || "(inline)"}:${s.sourceFunctionName} ${Math.round(s.duration)}ms`)
               .join(", ");
             const render = e.renderStart ? Math.round(e.startTime + e.duration - e.renderStart) : 0;
-            frames.push(`${Math.round(e.duration)}@${at(e.startTime)} r${render} [${scripts}]`);
+            frames.push(`${Math.round(e.duration)}ms at ${at(e.startTime)}ms, render ${render}ms, scripts [${scripts}]`);
           }
         });
-        loaf.observe({ type: "long-animation-frame", buffered: false });
+        if (PerformanceObserver.supportedEntryTypes.includes("long-animation-frame")) {
+          loaf.observe({ type: "long-animation-frame", buffered: false });
+        }
         const stamps: number[] = [];
         const tick = (now: number) => {
           stamps.push(now);
-          if (scroll) window.scrollBy(0, 6);
-          if (now - start < ms) requestAnimationFrame(tick);
+          window.scrollBy(0, 6);
+          if (now - start < 3000) requestAnimationFrame(tick);
           else {
             tasks.disconnect();
             loaf.disconnect();
@@ -44,22 +50,8 @@ async function measure(page: Page, scroll: boolean, ms: number): Promise<Window>
         };
         requestAnimationFrame(tick);
       }),
-    { scroll, ms },
   );
 }
-
-const benchmark = (page: Page) =>
-  page.evaluate(() => {
-    const end = performance.now() + 300;
-    let n = 0;
-    while (performance.now() < end) {
-      const a: string[] = [];
-      for (let i = 0; i < 200; i += 1) a.push(String(i * 7));
-      a.sort();
-      n += 1;
-    }
-    return n;
-  });
 
 async function setPaused(page: Page, paused: boolean) {
   const toggle = page.getByRole("button", { name: "Pause motion" });
@@ -67,48 +59,49 @@ async function setPaused(page: Page, paused: boolean) {
   await expect(toggle).toHaveAttribute("aria-pressed", String(paused));
 }
 
-const fmt = (w: Window) => `${w.fps.toFixed(1)} lt ${w.longTasks.length}/${w.longTasks.reduce((a, b) => a + b, 0)}ms`;
+const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
 
-test("probe @chromium-only", async ({ page, browserName }) => {
+const describe = (windows: Window[]) =>
+  windows.map((w) => `${w.fps.toFixed(1)} fps${w.longTasks.length ? ` (long tasks ${w.longTasks.join(", ")})` : ""}`).join("; ");
+
+// Chromium only: CPU throttling and long-task timing come from the DevTools protocol.
+// ADR 0013: a 2-vCPU runner can stall for several seconds after the browser starts, with motion
+// paused or live, so the budget applies to the median of five windows. The paused windows are the
+// control that tells a slow runner from slow motion.
+test("motion holds its frame budget under 4x CPU throttling @chromium-only", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "needs the DevTools protocol");
-  test.setTimeout(240_000);
+  test.setTimeout(120_000);
   await page.goto("/");
   await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
   const cdp = await page.context().newCDPSession(page);
-  const rows: string[] = [`PROBE cpu ${cpus()[0]?.model} x${cpus().length}`];
-  rows.push(
-    `PROBE gl ${await page.evaluate(() => {
-      const gl = document.createElement("canvas").getContext("webgl2");
-      const info = gl?.getExtension("WEBGL_debug_renderer_info");
-      return info ? gl?.getParameter(info.UNMASKED_RENDERER_WEBGL) : "unknown";
-    })}`,
-  );
-  const since = await page.evaluate(() => performance.now());
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
-  await page.waitForTimeout(1000);
-  const first = await measure(page, true, 3000);
-  rows.push(`PROBE first live scroll ${fmt(first)} (window began ${Math.round(since)}ms after load + 1s)`);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
-  rows.push(`PROBE bench x1 ${await benchmark(page)}`);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
-  rows.push(`PROBE bench x4 ${await benchmark(page)}`);
-  const details: string[] = [`PROBE first LoAF ${first.frames.join("; ")}`];
-  for (let round = 0; round < 4; round += 1) {
-    for (const paused of round % 2 ? [true, false] : [false, true]) {
-      await setPaused(page, paused);
+
+  const live: Window[] = [];
+  const paused: Window[] = [];
+  for (let round = 0; round < ROUNDS; round += 1) {
+    // Alternate which state goes first, so a runner that speeds up or slows down favours neither.
+    for (const pause of round % 2 ? [true, false] : [false, true]) {
+      await setPaused(page, pause);
       await page.evaluate(() => window.scrollTo(0, 0));
+      // Settle first: the field resumes and the frame in flight when the state changed finishes.
       await page.waitForTimeout(1000);
-      const t = Math.round(await page.evaluate(() => performance.now()));
-      const still = await measure(page, false, 2000);
-      const scroll = await measure(page, true, 3000);
-      const name = paused ? "paused" : "live  ";
-      rows.push(`PROBE r${round} t${t} ${name} still ${fmt(still)} | scroll ${fmt(scroll)}`);
-      details.push(`PROBE r${round} ${name} still LoAF ${still.frames.join("; ")}`);
-      details.push(`PROBE r${round} ${name} scroll LoAF ${scroll.frames.join("; ")}`);
+      (pause ? paused : live).push(await measure(page));
     }
   }
-  rows.push(`PROBE bench x4 after ${await benchmark(page)}`);
-  console.log([...rows, ...details].join("\n"));
+
+  const fps = median(live.map((w) => w.fps));
+  const longTasks = median(live.map((w) => w.longTasks.length));
+  const runner = `${cpus()[0]?.model ?? "unknown CPU"} x${cpus().length}`;
+  const report = `live median ${fps.toFixed(1)} fps [${describe(live)}] | paused median ${median(paused.map((w) => w.fps)).toFixed(1)} fps [${describe(paused)}] | ${runner}`;
+  // CI keeps no report artifact, so the log is the record of how close each run came.
+  console.log(`Frame budget under 4x throttling: ${report}`);
+  test.info().annotations.push({ type: "fps (4x throttle, median of live windows)", description: fps.toFixed(1) });
+  test.info().annotations.push({ type: "windows", description: report });
+  const frames = live.flatMap((w, i) => w.frames.map((f) => `live ${i + 1}: ${f}`));
+  test.info().annotations.push({ type: "long animation frames", description: frames.join("; ") || "none" });
+  const why = `${report} | long animation frames: ${frames.join("; ") || "none"}`;
+  expect(fps, why).toBeGreaterThanOrEqual(45);
+  expect(longTasks, why).toBe(0);
 });
 
 test("layout never shifts while motion runs", async ({ page }) => {
