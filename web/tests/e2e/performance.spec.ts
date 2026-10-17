@@ -1,19 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { cpus } from "node:os";
 
-// Chromium only: CPU throttling and long-task timing come from the DevTools protocol.
-test("motion holds its frame budget under 4x CPU throttling @chromium-only", async ({ page, browserName }) => {
-  test.skip(browserName !== "chromium", "needs the DevTools protocol");
-  await page.goto("/");
-  await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
-  // Throttling switches on mid-frame; CI showed the frame in flight at that moment as the only long
-  // task. Measure the steady state: settle first, then count only work that starts in the window.
-  await page.waitForTimeout(1000);
+import { expect, test, type Page } from "@playwright/test";
 
-  const result = await page.evaluate(
+type Window = { fps: number; longTasks: string[]; frames: string[] };
+
+const ROUNDS = 5;
+
+/** Scrolls 6px a frame for 3s and records only the work that starts inside that window. */
+function measure(page: Page) {
+  return page.evaluate(
     () =>
-      new Promise<{ fps: number; longTasks: string[]; frames: string[] }>((resolve) => {
+      new Promise<Window>((resolve) => {
         const start = performance.now();
         const at = (t: number) => Math.round(t - start);
         const longTasks: string[] = [];
@@ -54,12 +51,57 @@ test("motion holds its frame budget under 4x CPU throttling @chromium-only", asy
         requestAnimationFrame(tick);
       }),
   );
-  test.info().annotations.push({ type: "fps (4x throttle)", description: result.fps.toFixed(1) });
-  test.info().annotations.push({ type: "long tasks", description: result.longTasks.join("; ") || "none" });
-  test.info().annotations.push({ type: "long animation frames", description: result.frames.join("; ") || "none" });
-  const why = `long tasks: ${result.longTasks.join("; ")} | long animation frames: ${result.frames.join("; ")}`;
-  expect(result.fps, why).toBeGreaterThanOrEqual(45);
-  expect(result.longTasks, why).toEqual([]);
+}
+
+async function setPaused(page: Page, paused: boolean) {
+  const toggle = page.getByRole("button", { name: "Pause motion" });
+  if ((await toggle.getAttribute("aria-pressed")) !== String(paused)) await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", String(paused));
+}
+
+const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] ?? 0;
+
+const describe = (windows: Window[]) =>
+  windows.map((w) => `${w.fps.toFixed(1)} fps${w.longTasks.length ? ` (long tasks ${w.longTasks.join(", ")})` : ""}`).join("; ");
+
+// Chromium only: CPU throttling and long-task timing come from the DevTools protocol.
+// ADR 0013: a 2-vCPU runner can stall for several seconds after the browser starts, with motion
+// paused or live, so the budget applies to the median of five windows. The paused windows are the
+// control that tells a slow runner from slow motion.
+test("motion holds its frame budget under 4x CPU throttling @chromium-only", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "needs the DevTools protocol");
+  test.setTimeout(120_000);
+  await page.goto("/");
+  await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+
+  const live: Window[] = [];
+  const paused: Window[] = [];
+  for (let round = 0; round < ROUNDS; round += 1) {
+    // Alternate which state goes first, so a runner that speeds up or slows down favours neither.
+    for (const pause of round % 2 ? [true, false] : [false, true]) {
+      await setPaused(page, pause);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      // Settle first: the field resumes and the frame in flight when the state changed finishes.
+      await page.waitForTimeout(1000);
+      (pause ? paused : live).push(await measure(page));
+    }
+  }
+
+  const fps = median(live.map((w) => w.fps));
+  const longTasks = median(live.map((w) => w.longTasks.length));
+  const runner = `${cpus()[0]?.model ?? "unknown CPU"} x${cpus().length}`;
+  const report = `live median ${fps.toFixed(1)} fps [${describe(live)}] | paused median ${median(paused.map((w) => w.fps)).toFixed(1)} fps [${describe(paused)}] | ${runner}`;
+  // CI keeps no report artifact, so the log is the record of how close each run came.
+  console.log(`Frame budget under 4x throttling: ${report}`);
+  test.info().annotations.push({ type: "fps (4x throttle, median of live windows)", description: fps.toFixed(1) });
+  test.info().annotations.push({ type: "windows", description: report });
+  const frames = live.flatMap((w, i) => w.frames.map((f) => `live ${i + 1}: ${f}`));
+  test.info().annotations.push({ type: "long animation frames", description: frames.join("; ") || "none" });
+  const why = `${report} | long animation frames: ${frames.join("; ") || "none"}`;
+  expect(fps, why).toBeGreaterThanOrEqual(45);
+  expect(longTasks, why).toBe(0);
 });
 
 test("layout never shifts while motion runs", async ({ page }) => {

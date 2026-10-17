@@ -2,6 +2,21 @@
 
 All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet.
 
+## Unreleased: frame budget check (2026-10-18)
+
+### Changed
+
+- **Throttled frame budget.** The performance test now measures five rounds of a paused and a live window under 4x CPU throttling and asserts the brief's budget of 45 fps or more with no long tasks on the median live window. The paused windows and the runner's CPU are printed beside the live ones, so a failure says whether the runner or the motion was slow. The test takes about 45 seconds. See ADR 0013.
+
+### Fixed
+
+- The throttled performance test failed on some CI runs (28.9 and 29.9 fps in run 39038654348) and passed on rerun. A probe across five runs and three runner CPUs found that a 2-vCPU runner can run slow for about 15 seconds after the browser starts, with motion paused as well as live, and afterwards holds 50 to 60 fps depending on its CPU. One early window measured that warm-up.
+
+### Verification
+
+- Pull request #2, run 39061149099, passed five consecutive web jobs on four runner CPUs (AMD EPYC 7763, 9V74 and 9V45, Intel Xeon Platinum 8370C). Live medians were 50.8 to 59.9 fps and paused medians 51.3 to 60.2 fps, with no Playwright retries.
+- Locally on Windows 11, `npm run test:e2e` passed 55 tests with a live median of 59.9 fps.
+
 ## Unreleased: optional pieces (2026-10-17)
 
 ### Added
