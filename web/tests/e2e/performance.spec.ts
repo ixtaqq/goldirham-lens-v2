@@ -76,19 +76,33 @@ test("probe @chromium-only", async ({ page, browserName }) => {
   await expect(page.locator(".signal-field")).toHaveClass(/field-live/);
   const cdp = await page.context().newCDPSession(page);
   const rows: string[] = [`PROBE cpu ${cpus()[0]?.model} x${cpus().length}`];
+  rows.push(
+    `PROBE gl ${await page.evaluate(() => {
+      const gl = document.createElement("canvas").getContext("webgl2");
+      const info = gl?.getExtension("WEBGL_debug_renderer_info");
+      return info ? gl?.getParameter(info.UNMASKED_RENDERER_WEBGL) : "unknown";
+    })}`,
+  );
+  const since = await page.evaluate(() => performance.now());
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  await page.waitForTimeout(1000);
+  const first = await measure(page, true, 3000);
+  rows.push(`PROBE first live scroll ${fmt(first)} (window began ${Math.round(since)}ms after load + 1s)`);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
   rows.push(`PROBE bench x1 ${await benchmark(page)}`);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   rows.push(`PROBE bench x4 ${await benchmark(page)}`);
-  const details: string[] = [];
+  const details: string[] = [`PROBE first LoAF ${first.frames.join("; ")}`];
   for (let round = 0; round < 4; round += 1) {
     for (const paused of round % 2 ? [true, false] : [false, true]) {
       await setPaused(page, paused);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(1000);
+      const t = Math.round(await page.evaluate(() => performance.now()));
       const still = await measure(page, false, 2000);
       const scroll = await measure(page, true, 3000);
       const name = paused ? "paused" : "live  ";
-      rows.push(`PROBE r${round} ${name} still ${fmt(still)} | scroll ${fmt(scroll)}`);
+      rows.push(`PROBE r${round} t${t} ${name} still ${fmt(still)} | scroll ${fmt(scroll)}`);
       details.push(`PROBE r${round} ${name} still LoAF ${still.frames.join("; ")}`);
       details.push(`PROBE r${round} ${name} scroll LoAF ${scroll.frames.join("; ")}`);
     }
