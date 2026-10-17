@@ -117,6 +117,8 @@ Read the report first. The first report found that the v1 rules did not beat ran
 
 Create a second Vercel project from the same repository with the root directory set to `web`. It needs no environment variables and never connects to anything.
 
+This is done: the project `goldirham-lens` serves https://goldirham-lens.vercel.app and redeploys on every push to `main`. If you rename it or add a custom domain, set `NEXT_PUBLIC_SITE_URL` there so the social card links to the right address.
+
 ### 13. Set up the private dashboard (optional)
 
 The dashboard is a second Vercel project built from the same repository. It reads through its own read-only database role and accepts only your Telegram account.

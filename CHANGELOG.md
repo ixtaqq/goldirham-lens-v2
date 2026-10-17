@@ -11,6 +11,7 @@ All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet
 - `Database(read_only=True)` runs each unit of work inside `SET TRANSACTION READ ONLY` and rolls it back.
 - A fifth import contract keeps the dashboard away from the data layer, pipeline, narrative, bot and outbound HTTP.
 - `main` is the default branch, created at the green foundation commit.
+- The showcase is live at https://goldirham-lens.vercel.app from the Vercel project `goldirham-lens` (root `web`, production branch `main`).
 
 ## Unreleased: v2.0 foundation (2026-10-16)
 

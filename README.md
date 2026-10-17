@@ -49,6 +49,8 @@ python -m uv run lens cycle run --dry-run
 
 ## Showcase website
 
+Live at **https://goldirham-lens.vercel.app** (Vercel project `goldirham-lens`, root `web`, production branch `main`).
+
 `web/` is a static Next.js site that explains the method with a sample briefing. Its data comes
 from `lens demo export`, which runs the real validation, analysis and rendering code over a seeded
 synthetic market and writes `web/data/demo.json`. CI fails if that file is out of date.
