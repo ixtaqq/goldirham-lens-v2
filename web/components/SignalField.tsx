@@ -282,7 +282,8 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
     let lastDraw = 0;
     let pointerAt = -Infinity;
     let scrollingUntil = 0;
-    let parallax = 0;
+    // Parallax is a CSS scroll-driven animation where supported; the field only needs its offset.
+    const cssParallax = CSS.supports("animation-timeline: scroll()");
     let heroVisible = true;
     let labelWidth = 0;
     const frameSvg = document.querySelector("[data-verify-frame] svg");
@@ -314,11 +315,12 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
       if (slowFrames === 31) resize();
       last = now;
       // The drift is slow, so the field redraws at about 30fps unless the pointer steers the lens,
-      // and holds its frame while the page scrolls; parallax moves the canvas on the compositor.
+      // and holds its frame while the page scrolls.
       if (now < scrollingUntil) return;
       if (now - lastDraw < IDLE_FRAME_MS && now - pointerAt > 250) return;
       lastDraw = now;
       const scroll = window.scrollY;
+      const parallax = cssParallax ? Math.min(scroll * 0.05, PARALLAX_MAX) : 0;
       const small = width < 768;
       const lens = pointer ?? {
         x: width * (small ? 0.74 : 0.86),
@@ -357,8 +359,6 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
 
     const onScroll = (event: Event) => {
       scrollingUntil = event.timeStamp + 150;
-      parallax = Math.min(window.scrollY * 0.05, PARALLAX_MAX);
-      canvas.style.transform = `translate3d(0, ${-parallax}px, 0)`;
     };
 
     const onPointer = (event: PointerEvent) => {

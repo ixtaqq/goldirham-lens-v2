@@ -272,6 +272,20 @@
   opacity: 0;
 }
 
+/* Parallax of at most 24px over the first 480px of scroll, run by the compositor (PARALLAX_MAX). */
+@keyframes field-parallax {
+  to {
+    transform: translate3d(0, -24px, 0);
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .motion-ready:not(.motion-paused) .field-canvas {
+    animation: field-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 480px;
+  }
+}
+
 /* ---- Day switcher ------------------------------------------------------------------------------ */
 .day-tab .day-tab-rule {
   opacity: 0;

@@ -26,7 +26,7 @@ All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet
 - README pointed the test database at `lens`, which the test fixture refuses. It now points at `lens_test`.
 - The content-parity end-to-end test ran out of time in WebKit on CI. Parity and section screenshots are now separate tests.
 - Cron runs of the five scheduled workflows skip until the repository variable `SCHEDULES_ENABLED` is `true` (runbook step 10). Manual runs are unaffected.
-- The signal field held only 32 to 34 fps under 4x throttling on the CI runner. Locally it took 20x throttling to reproduce (31.6 fps). It now redraws at about 30 fps unless the pointer moves the lens, holds its frame while the page scrolls, moves the parallax on the compositor, stops once the hero is out of view, and draws without MSAA. The same 20x case now measures 51.5 fps.
+- The signal field held only 32 to 34 fps under 4x throttling on the CI runner. Locally it took 20x throttling to reproduce (31.6 fps). It now redraws at about 30 fps unless the pointer moves the lens, holds its frame while the page scrolls, stops once the hero is out of view, and draws without MSAA. Parallax is a CSS scroll-driven animation, so no script runs on scroll. The same 20x case now measures 59.2 fps with no long tasks.
 
 ### Known limits
 
