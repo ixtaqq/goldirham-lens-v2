@@ -17,6 +17,8 @@ import { MOTION_EVENT } from "./MotionToggle";
 
 type Mode = "webgl" | "canvas" | "poster";
 
+const IDLE_FRAME_MS = 32;
+
 interface Frame {
   width: number;
   height: number;
@@ -106,7 +108,7 @@ function buildGeometry(traces: number[][]) {
 }
 
 function webglRenderer(canvas: HTMLCanvasElement, layout: TraceLayout[], traces: number[][]): Renderer | null {
-  const gl = canvas.getContext("webgl2", { alpha: true, antialias: true, premultipliedAlpha: true });
+  const gl = canvas.getContext("webgl2", { alpha: true, antialias: false, premultipliedAlpha: true });
   if (!gl) return null;
   const compile = (type: number, source: string) => {
     const shader = gl.createShader(type);
@@ -277,22 +279,28 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
     let pointer: { x: number; y: number } | null = null;
     let slowFrames = 0;
     let last = 0;
+    let lastDraw = 0;
+    let pointerAt = -Infinity;
+    let scrollingUntil = 0;
+    let parallax = 0;
+    let heroVisible = true;
     let labelWidth = 0;
+    const frameSvg = document.querySelector("[data-verify-frame] svg");
 
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
       const cap = width < 768 ? 1.5 : 2;
       scale = Math.min(window.devicePixelRatio || 1, cap) * (slowFrames > 30 ? 0.5 : 1);
+      // One parallax step taller, so the shifted canvas never uncovers its bottom edge.
       canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      renderer?.resize(width, height, scale);
+      canvas.style.height = `${height + PARALLAX_MAX}px`;
+      renderer?.resize(width, height + PARALLAX_MAX, scale);
     };
 
     const frameBox = () => {
-      const svg = document.querySelector("[data-verify-frame] svg");
-      if (!svg) return null;
-      const rect = svg.getBoundingClientRect();
+      if (!frameSvg) return null;
+      const rect = frameSvg.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > height) return null;
       const unit = rect.width / 120;
       return { x: rect.left + 46 * unit, y: rect.top + 22 * unit, w: 52 * unit, h: 52 * unit };
@@ -300,10 +308,16 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
 
     const tick = (now: number) => {
       if (!running || !renderer) return;
+      raf = requestAnimationFrame(tick);
       if (!start) start = now;
       if (last && now - last > 24) slowFrames += 1;
       if (slowFrames === 31) resize();
       last = now;
+      // The drift is slow, so the field redraws at about 30fps unless the pointer steers the lens,
+      // and holds its frame while the page scrolls; parallax moves the canvas on the compositor.
+      if (now < scrollingUntil) return;
+      if (now - lastDraw < IDLE_FRAME_MS && now - pointerAt > 250) return;
+      lastDraw = now;
       const scroll = window.scrollY;
       const small = width < 768;
       const lens = pointer ?? {
@@ -311,13 +325,14 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
         y: height * (small ? 0.64 : 0.24) + Math.sin(scroll * 0.002) * 40,
       };
       const r = width < 768 ? 80 : 104;
+      const box = frameBox();
       renderer.draw({
         width,
-        height,
+        height: height + PARALLAX_MAX,
         time: (now - start) / 1000,
-        parallax: Math.min(scroll * 0.05, PARALLAX_MAX),
-        lens: { ...lens, r },
-        box: frameBox(),
+        parallax: 0,
+        lens: { x: lens.x, y: lens.y + parallax, r },
+        box: box && { ...box, y: box.y + parallax },
         pulse: verifyPulse(now - start),
       });
       const label = labelRef.current;
@@ -325,12 +340,11 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
         const x = Math.min(lens.x + r * 0.72, width - labelWidth - 12);
         label.style.transform = `translate(${x}px, ${lens.y + r * 0.72}px)`;
       }
-      raf = requestAnimationFrame(tick);
     };
 
     const paused = () => document.documentElement.classList.contains("motion-paused");
     const play = () => {
-      if (running || !renderer || document.hidden || paused() || reduce.matches) return;
+      if (running || !renderer || !heroVisible || document.hidden || paused() || reduce.matches) return;
       running = true;
       last = 0;
       raf = requestAnimationFrame(tick);
@@ -339,10 +353,18 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
       running = false;
       cancelAnimationFrame(raf);
     };
-    const sync = () => (document.hidden || paused() || reduce.matches ? stop() : play());
+    const sync = () => (!heroVisible || document.hidden || paused() || reduce.matches ? stop() : play());
+
+    const onScroll = (event: Event) => {
+      scrollingUntil = event.timeStamp + 150;
+      parallax = Math.min(window.scrollY * 0.05, PARALLAX_MAX);
+      canvas.style.transform = `translate3d(0, ${-parallax}px, 0)`;
+    };
 
     const onPointer = (event: PointerEvent) => {
-      if (event.pointerType === "mouse") pointer = { x: event.clientX, y: event.clientY };
+      if (event.pointerType !== "mouse") return;
+      pointer = { x: event.clientX, y: event.clientY };
+      pointerAt = event.timeStamp;
     };
 
     const boot = () => {
@@ -357,9 +379,14 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
 
     const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 200));
     const handle = idle(boot);
-    const observer = new IntersectionObserver(([entry]) => (entry?.isIntersecting ? sync() : stop()));
-    observer.observe(canvas);
+    // Parallax and the verification moment live in the hero; below it the field holds its last frame.
+    const observer = new IntersectionObserver(([entry]) => {
+      heroVisible = entry?.isIntersecting ?? true;
+      sync();
+    });
+    observer.observe(document.getElementById("top") ?? canvas);
     window.addEventListener("resize", resize);
+    window.addEventListener("scroll", onScroll, { passive: true });
     if (!coarse) window.addEventListener("pointermove", onPointer, { passive: true });
     document.addEventListener("visibilitychange", sync);
     window.addEventListener(MOTION_EVENT, sync);
@@ -370,6 +397,7 @@ export function SignalField({ traces, session, poster }: { traces: number[][]; s
       if (typeof handle === "number") window.cancelIdleCallback?.(handle);
       observer.disconnect();
       window.removeEventListener("resize", resize);
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener(MOTION_EVENT, sync);
