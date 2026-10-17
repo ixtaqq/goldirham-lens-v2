@@ -1,0 +1,70 @@
+name: Daily briefing
+
+on:
+  schedule:
+    - cron: "0 23 * * *" # 07:00 MYT
+    - cron: "40 23 * * *" # 07:40 MYT, the backup trigger
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: Why this run was started
+        required: false
+        default: dispatch
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-cycle
+  cancel-in-progress: false
+
+jobs:
+  briefing:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      OWNER_TELEGRAM_ID: ${{ secrets.OWNER_TELEGRAM_ID }}
+      HEALTHCHECK_PING_URL: ${{ secrets.HEALTHCHECK_PING_URL }}
+      ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+      - run: uv sync --frozen --no-default-groups --extra pipeline
+      - id: day
+        run: echo "day=$(TZ=Asia/Kuala_Lumpur date +%F)" >> "$GITHUB_OUTPUT"
+      - name: Restore the degraded-mode marker
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lens-state
+          key: degraded-sent-${{ steps.day.outputs.day }}
+      - name: Run the cycle
+        id: cycle
+        env:
+          TRIGGER: ${{ github.event_name == 'schedule' && (github.event.schedule == '0 23 * * *' && 'schedule_1' || 'schedule_2') || inputs.trigger || 'dispatch' }}
+        run: |
+          set +e
+          uv run --no-sync lens cycle run --trigger "$TRIGGER"
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          # 3 means a degraded briefing was sent; the marker below prevents a second one today
+          if [ "$code" -eq 3 ]; then exit 0; fi
+          exit "$code"
+      - name: Save the degraded-mode marker
+        if: steps.cycle.outputs.code == '3'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .lens-state
+          key: degraded-sent-${{ steps.day.outputs.day }}
+      - name: Alert the owner when the job broke before the cycle ran
+        if: failure() && steps.cycle.outcome != 'failure'
+        run: >-
+          uv run --no-sync lens owner notify
+          "Goldirham Lens: the daily job failed before the briefing ran.
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

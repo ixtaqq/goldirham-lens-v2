@@ -1,0 +1,1083 @@
+{
+  "strategy": "pullback_in_uptrend",
+  "version": "52df5d457a0c",
+  "params": {
+    "atr_period": 14,
+    "atr_stop_multiple": "2.0",
+    "targets_r": [
+      "1.5",
+      "3.0"
+    ],
+    "min_reward_risk": "2.0",
+    "expiry_days": 120,
+    "ma_fast": 50,
+    "ma_slow": 200,
+    "trend_multiple": "1.05",
+    "floor_vs_ma_slow": "0.85",
+    "max_atr_pct": "8.0",
+    "rsi_period": 14,
+    "rsi_trigger": "25",
+    "support_distance_pct": "1.0",
+    "swing_radius": 2,
+    "fundamentals": {
+      "max_pe": "100",
+      "min_revenue_growth_pct": "-20"
+    }
+  },
+  "period": [
+    "2022-09-21",
+    "2026-10-16"
+  ],
+  "out_of_sample_from": "2025-02-28",
+  "assets": [
+    "1155.KL",
+    "1295.KL",
+    "5183.KL",
+    "AAPL",
+    "BNB-USD",
+    "BTC-USD",
+    "ETH-USD",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SOL-USD",
+    "SPY"
+  ],
+  "assumptions": [
+    "Entry at the signal session's close; evaluation starts the next session.",
+    "When one bar touches both the stop and a target, the stop wins.",
+    "A gap below the stop fills at that session's open.",
+    "One open trade per asset at a time; no fees or slippage.",
+    "Fundamentals are not point-in-time, so the fundamentals rule is skipped."
+  ],
+  "caveats": [
+    "Survivorship: the watchlist was chosen today, so history favours assets that did well.",
+    "Small samples: a handful of trades says little; read the interval, not the point estimate.",
+    "Bars that failed quality checks were excluded, so some sessions are missing.",
+    "Past behaviour of these rules is not a promise about future results."
+  ],
+  "full_to_t2": {
+    "all": {
+      "resolved": 106,
+      "open": 8,
+      "t1_touch_rate_pct": "48.1",
+      "win_rate_pct": "28.3",
+      "expectancy_r": "0.03",
+      "expectancy_ci90_r": [
+        "-0.25",
+        "0.30"
+      ],
+      "max_drawdown_r": "-23.67",
+      "r_quartiles": [
+        "-1.00",
+        "-1.00",
+        "1.29"
+      ],
+      "median_sessions_held": 22
+    },
+    "out_of_sample": {
+      "resolved": 52,
+      "open": 8,
+      "t1_touch_rate_pct": "40.4",
+      "win_rate_pct": "28.8",
+      "expectancy_r": "0.06",
+      "expectancy_ci90_r": [
+        "-0.31",
+        "0.49"
+      ],
+      "max_drawdown_r": "-23.67",
+      "r_quartiles": [
+        "-1.00",
+        "-1.00",
+        "1.39"
+      ],
+      "median_sessions_held": 16
+    }
+  },
+  "half_at_t1_breakeven": {
+    "all": {
+      "resolved": 106,
+      "open": 8,
+      "t1_touch_rate_pct": "48.1",
+      "win_rate_pct": "48.1",
+      "expectancy_r": "0.15",
+      "expectancy_ci90_r": [
+        "-0.07",
+        "0.36"
+      ],
+      "max_drawdown_r": "-17.75",
+      "r_quartiles": [
+        "-1.00",
+        "-1.00",
+        "0.75"
+      ],
+      "median_sessions_held": 22
+    },
+    "out_of_sample": {
+      "resolved": 52,
+      "open": 8,
+      "t1_touch_rate_pct": "40.4",
+      "win_rate_pct": "40.4",
+      "expectancy_r": "0.06",
+      "expectancy_ci90_r": [
+        "-0.25",
+        "0.38"
+      ],
+      "max_drawdown_r": "-17.75",
+      "r_quartiles": [
+        "-1.00",
+        "-1.00",
+        "0.75"
+      ],
+      "median_sessions_held": 16
+    }
+  },
+  "random_entry_baseline": {
+    "runs": 100,
+    "mean_expectancy_r": "0.27",
+    "p05_r": "-0.02",
+    "p95_r": "0.57"
+  },
+  "buy_and_hold_pct": {
+    "1155.KL": "14.4",
+    "1295.KL": "9.8",
+    "5183.KL": "-49.8",
+    "AAPL": "138.5",
+    "BNB-USD": "130.0",
+    "BTC-USD": "97.1",
+    "ETH-USD": "-1.3",
+    "MSFT": "128.4",
+    "NVDA": "1681.4",
+    "QQQ": "170.5",
+    "SOL-USD": "13.5",
+    "SPY": "111.2"
+  },
+  "per_asset_trades": {
+    "1155.KL": 8,
+    "1295.KL": 6,
+    "5183.KL": 5,
+    "AAPL": 13,
+    "BNB-USD": 5,
+    "BTC-USD": 6,
+    "ETH-USD": 7,
+    "MSFT": 14,
+    "NVDA": 13,
+    "QQQ": 19,
+    "SOL-USD": 4,
+    "SPY": 14
+  },
+  "trades": [
+    {
+      "symbol": "MSFT",
+      "signal_day": "2023-08-08",
+      "exit_day": "2023-09-26",
+      "status": "STOPPED",
+      "entry": "326.05",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2023-08-08",
+      "exit_day": "2023-08-17",
+      "status": "STOPPED",
+      "entry": "372.00",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2023-08-08",
+      "exit_day": "2023-08-16",
+      "status": "STOPPED",
+      "entry": "448.75",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2023-08-14",
+      "exit_day": "2023-10-26",
+      "status": "STOPPED",
+      "entry": "43.75",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2023-08-15",
+      "exit_day": "2023-09-27",
+      "status": "STOPPED",
+      "entry": "177.45",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2023-08-21",
+      "exit_day": "2023-09-27",
+      "status": "STOPPED",
+      "entry": "363.90",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2023-08-24",
+      "exit_day": "2023-09-26",
+      "status": "STOPPED",
+      "entry": "436.89",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2023-09-27",
+      "exit_day": "2023-11-03",
+      "status": "T2_HIT",
+      "entry": "312.79",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2023-10-03",
+      "exit_day": "2023-10-26",
+      "status": "STOPPED",
+      "entry": "421.59",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2023-10-20",
+      "exit_day": "2023-10-26",
+      "status": "STOPPED",
+      "entry": "354.60",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2023-12-04",
+      "exit_day": "2024-01-29",
+      "status": "T2_HIT",
+      "entry": "369.14",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2023-12-06",
+      "exit_day": "2024-01-19",
+      "status": "T2_HIT",
+      "entry": "385.05",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2024-01-02",
+      "exit_day": "2024-01-16",
+      "status": "T2_HIT",
+      "entry": "48.17",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2024-01-30",
+      "exit_day": "2024-04-19",
+      "status": "STOPPED",
+      "entry": "425.30",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2024-02-13",
+      "exit_day": "2024-04-25",
+      "status": "STOPPED",
+      "entry": "406.32",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2024-02-20",
+      "exit_day": "2024-03-04",
+      "status": "T2_HIT",
+      "entry": "69.45",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "1295.KL",
+      "signal_day": "2024-02-28",
+      "exit_day": "2024-03-01",
+      "status": "STOPPED",
+      "entry": "4.43",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-02-29",
+      "exit_day": "2024-04-17",
+      "status": "STOPPED",
+      "entry": "508.08",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2024-04-02",
+      "exit_day": "2024-04-19",
+      "status": "STOPPED",
+      "entry": "89.45",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2024-04-30",
+      "exit_day": "2024-06-12",
+      "status": "T2_HIT",
+      "entry": "389.33",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-04-30",
+      "exit_day": "2024-06-12",
+      "status": "T2_HIT",
+      "entry": "501.98",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2024-05-01",
+      "exit_day": "2024-06-05",
+      "status": "T2_HIT",
+      "entry": "421.52",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2024-05-03",
+      "exit_day": "2024-08-19",
+      "status": "T2_HIT",
+      "entry": "9.80",
+      "outcome_r": "2.94"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2024-06-24",
+      "exit_day": "2024-07-25",
+      "status": "STOPPED",
+      "entry": "118.11",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-06-27",
+      "exit_day": "2024-07-25",
+      "status": "STOPPED",
+      "entry": "546.37",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2024-07-16",
+      "exit_day": "2024-07-18",
+      "status": "STOPPED",
+      "entry": "449.52",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2024-07-18",
+      "exit_day": "2024-08-05",
+      "status": "STOPPED",
+      "entry": "224.18",
+      "outcome_r": "-2.34"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2024-07-22",
+      "exit_day": "2024-07-25",
+      "status": "STOPPED",
+      "entry": "442.94",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-07-26",
+      "exit_day": "2024-08-02",
+      "status": "STOPPED",
+      "entry": "544.44",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2024-07-30",
+      "exit_day": "2024-08-05",
+      "status": "STOPPED",
+      "entry": "457.53",
+      "outcome_r": "-2.03"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2024-07-31",
+      "exit_day": "2024-08-05",
+      "status": "STOPPED",
+      "entry": "418.35",
+      "outcome_r": "-1.62"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2024-08-22",
+      "exit_day": "2024-12-20",
+      "status": "EXPIRED",
+      "entry": "415.55",
+      "outcome_r": "1.29"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2024-09-03",
+      "exit_day": "2024-12-17",
+      "status": "T2_HIT",
+      "entry": "222.77",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-09-03",
+      "exit_day": "2024-11-08",
+      "status": "T2_HIT",
+      "entry": "552.08",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2024-09-11",
+      "exit_day": "2024-11-14",
+      "status": "STOPPED",
+      "entry": "10.68",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2024-10-23",
+      "exit_day": "2024-12-11",
+      "status": "T2_HIT",
+      "entry": "488.36",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "1295.KL",
+      "signal_day": "2024-10-30",
+      "exit_day": "2025-02-03",
+      "status": "STOPPED",
+      "entry": "4.42",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2024-11-15",
+      "exit_day": "2024-11-20",
+      "status": "STOPPED",
+      "entry": "10.36",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2024-11-25",
+      "exit_day": "2025-01-27",
+      "status": "STOPPED",
+      "entry": "136.02",
+      "outcome_r": "-1.03"
+    },
+    {
+      "symbol": "SOL-USD",
+      "signal_day": "2024-11-26",
+      "exit_day": "2024-12-19",
+      "status": "STOPPED",
+      "entry": "230.60",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-12-12",
+      "exit_day": "2024-12-18",
+      "status": "STOPPED",
+      "entry": "604.33",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2024-12-18",
+      "exit_day": "2025-01-13",
+      "status": "STOPPED",
+      "entry": "516.47",
+      "outcome_r": "-1.05"
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2024-12-20",
+      "exit_day": "2025-01-13",
+      "status": "STOPPED",
+      "entry": "3470.47",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BTC-USD",
+      "signal_day": "2024-12-30",
+      "exit_day": "2025-02-26",
+      "status": "STOPPED",
+      "entry": "92620.71",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2024-12-31",
+      "exit_day": "2025-03-04",
+      "status": "STOPPED",
+      "entry": "586.08",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2025-01-02",
+      "exit_day": "2025-01-10",
+      "status": "STOPPED",
+      "entry": "243.85",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BNB-USD",
+      "signal_day": "2025-01-07",
+      "exit_day": "2025-02-02",
+      "status": "STOPPED",
+      "entry": "698.01",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SOL-USD",
+      "signal_day": "2025-01-13",
+      "exit_day": "2025-01-18",
+      "status": "T2_HIT",
+      "entry": "182.75",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2025-01-14",
+      "exit_day": "2025-03-04",
+      "status": "STOPPED",
+      "entry": "505.08",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2025-01-16",
+      "exit_day": "2025-03-11",
+      "status": "STOPPED",
+      "entry": "228.26",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2025-01-27",
+      "exit_day": "2025-02-02",
+      "status": "STOPPED",
+      "entry": "3181.93",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2025-01-28",
+      "exit_day": "2025-02-03",
+      "status": "STOPPED",
+      "entry": "128.99",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BNB-USD",
+      "signal_day": "2025-02-04",
+      "exit_day": "2025-06-04",
+      "status": "EXPIRED",
+      "entry": "572.69",
+      "outcome_r": "1.27"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2025-02-24",
+      "exit_day": "2025-02-28",
+      "status": "STOPPED",
+      "entry": "130.28",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BTC-USD",
+      "signal_day": "2025-03-09",
+      "exit_day": "2025-05-21",
+      "status": "T2_HIT",
+      "entry": "80699.17",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "BTC-USD",
+      "signal_day": "2025-06-20",
+      "exit_day": "2025-07-14",
+      "status": "T2_HIT",
+      "entry": "103317.80",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "BTC-USD",
+      "signal_day": "2025-07-31",
+      "exit_day": "2025-08-25",
+      "status": "STOPPED",
+      "entry": "115761.13",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2025-08-01",
+      "exit_day": "2025-08-12",
+      "status": "T2_HIT",
+      "entry": "3486.39",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2025-08-01",
+      "exit_day": "2025-09-15",
+      "status": "T2_HIT",
+      "entry": "553.88",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "BNB-USD",
+      "signal_day": "2025-08-02",
+      "exit_day": "2025-09-13",
+      "status": "T2_HIT",
+      "entry": "736.42",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2025-08-11",
+      "exit_day": "2025-08-21",
+      "status": "STOPPED",
+      "entry": "521.77",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SOL-USD",
+      "signal_day": "2025-08-18",
+      "exit_day": "2025-09-14",
+      "status": "T2_HIT",
+      "entry": "183.02",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2025-08-20",
+      "exit_day": "2025-09-25",
+      "status": "STOPPED",
+      "entry": "4336.41",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BTC-USD",
+      "signal_day": "2025-08-29",
+      "exit_day": "2025-11-04",
+      "status": "STOPPED",
+      "entry": "108378.32",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2025-09-05",
+      "exit_day": "2025-10-28",
+      "status": "T2_HIT",
+      "entry": "495.00",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2025-09-05",
+      "exit_day": "2025-10-28",
+      "status": "T2_HIT",
+      "entry": "167.02",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2025-09-25",
+      "exit_day": "2025-10-28",
+      "status": "T2_HIT",
+      "entry": "658.05",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2025-09-26",
+      "exit_day": "2025-10-10",
+      "status": "STOPPED",
+      "entry": "4034.27",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "5183.KL",
+      "signal_day": "2025-10-06",
+      "exit_day": "2025-11-03",
+      "status": "STOPPED",
+      "entry": "4.20",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2025-10-07",
+      "exit_day": "2025-10-10",
+      "status": "STOPPED",
+      "entry": "256.48",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2025-10-10",
+      "exit_day": "2025-10-28",
+      "status": "T2_HIT",
+      "entry": "589.50",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2025-11-03",
+      "exit_day": "2025-11-06",
+      "status": "STOPPED",
+      "entry": "632.08",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2025-11-05",
+      "exit_day": "2025-11-18",
+      "status": "STOPPED",
+      "entry": "507.16",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2025-11-07",
+      "exit_day": "2026-01-08",
+      "status": "STOPPED",
+      "entry": "268.47",
+      "outcome_r": "-1.12"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2025-11-10",
+      "exit_day": "2025-11-14",
+      "status": "STOPPED",
+      "entry": "623.23",
+      "outcome_r": "-1.23"
+    },
+    {
+      "symbol": "5183.KL",
+      "signal_day": "2025-11-12",
+      "exit_day": "2025-11-19",
+      "status": "STOPPED",
+      "entry": "3.52",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2025-11-17",
+      "exit_day": "2026-01-31",
+      "status": "STOPPED",
+      "entry": "3027.89",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2025-11-17",
+      "exit_day": "2025-11-21",
+      "status": "STOPPED",
+      "entry": "603.66",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2025-11-17",
+      "exit_day": "2026-03-17",
+      "status": "EXPIRED",
+      "entry": "665.67",
+      "outcome_r": "0.31"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2025-11-20",
+      "exit_day": "2026-03-20",
+      "status": "EXPIRED",
+      "entry": "180.64",
+      "outcome_r": "-0.49"
+    },
+    {
+      "symbol": "5183.KL",
+      "signal_day": "2025-11-21",
+      "exit_day": "2025-11-24",
+      "status": "STOPPED",
+      "entry": "3.25",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2025-12-10",
+      "exit_day": "2026-01-14",
+      "status": "STOPPED",
+      "entry": "478.56",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BNB-USD",
+      "signal_day": "2025-12-15",
+      "exit_day": "2026-01-31",
+      "status": "STOPPED",
+      "entry": "858.60",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2026-01-14",
+      "exit_day": "2026-02-04",
+      "status": "STOPPED",
+      "entry": "619.55",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2026-01-15",
+      "exit_day": "2026-01-20",
+      "status": "STOPPED",
+      "entry": "258.21",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2026-01-21",
+      "exit_day": "2026-02-04",
+      "status": "T2_HIT",
+      "entry": "247.65",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2026-02-12",
+      "exit_day": "2026-03-20",
+      "status": "STOPPED",
+      "entry": "600.64",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2026-02-16",
+      "exit_day": "2026-02-26",
+      "status": "STOPPED",
+      "entry": "11.94",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1295.KL",
+      "signal_day": "2026-02-26",
+      "exit_day": "2026-03-02",
+      "status": "STOPPED",
+      "entry": "5.00",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2026-02-27",
+      "exit_day": "2026-03-09",
+      "status": "STOPPED",
+      "entry": "11.96",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2026-03-05",
+      "exit_day": "2026-03-19",
+      "status": "STOPPED",
+      "entry": "260.29",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1295.KL",
+      "signal_day": "2026-03-09",
+      "exit_day": "2026-07-07",
+      "status": "EXPIRED",
+      "entry": "4.74",
+      "outcome_r": "0.85"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2026-03-10",
+      "exit_day": "2026-03-16",
+      "status": "STOPPED",
+      "entry": "11.66",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2026-03-20",
+      "exit_day": "2026-05-01",
+      "status": "T2_HIT",
+      "entry": "247.99",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2026-03-26",
+      "exit_day": "2026-04-13",
+      "status": "STOPPED",
+      "entry": "11.44",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1155.KL",
+      "signal_day": "2026-04-14",
+      "exit_day": "2026-05-28",
+      "status": "STOPPED",
+      "entry": "11.04",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "5183.KL",
+      "signal_day": "2026-05-08",
+      "exit_day": "2026-06-15",
+      "status": "STOPPED",
+      "entry": "5.37",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2026-06-05",
+      "exit_day": "2026-06-09",
+      "status": "STOPPED",
+      "entry": "307.34",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2026-06-08",
+      "exit_day": "2026-06-26",
+      "status": "STOPPED",
+      "entry": "208.64",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2026-06-10",
+      "exit_day": "2026-07-29",
+      "status": "STOPPED",
+      "entry": "693.69",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2026-06-22",
+      "exit_day": "2026-06-26",
+      "status": "STOPPED",
+      "entry": "744.39",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "SPY",
+      "signal_day": "2026-06-29",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "741.00",
+      "outcome_r": null
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2026-07-27",
+      "exit_day": "2026-10-06",
+      "status": "T2_HIT",
+      "entry": "196.51",
+      "outcome_r": "3.00"
+    },
+    {
+      "symbol": "QQQ",
+      "signal_day": "2026-07-30",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "683.55",
+      "outcome_r": null
+    },
+    {
+      "symbol": "5183.KL",
+      "signal_day": "2026-08-03",
+      "exit_day": "2026-08-26",
+      "status": "STOPPED",
+      "entry": "4.61",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "AAPL",
+      "signal_day": "2026-08-12",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "302.25",
+      "outcome_r": null
+    },
+    {
+      "symbol": "1295.KL",
+      "signal_day": "2026-08-13",
+      "exit_day": "2026-08-27",
+      "status": "STOPPED",
+      "entry": "5.16",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "1295.KL",
+      "signal_day": "2026-09-10",
+      "exit_day": "2026-09-30",
+      "status": "STOPPED",
+      "entry": "4.85",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "MSFT",
+      "signal_day": "2026-09-11",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "495.63",
+      "outcome_r": null
+    },
+    {
+      "symbol": "ETH-USD",
+      "signal_day": "2026-09-15",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "2396.14",
+      "outcome_r": null
+    },
+    {
+      "symbol": "SOL-USD",
+      "signal_day": "2026-09-16",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "98.570",
+      "outcome_r": null
+    },
+    {
+      "symbol": "BNB-USD",
+      "signal_day": "2026-09-28",
+      "exit_day": "2026-10-15",
+      "status": "STOPPED",
+      "entry": "763.96",
+      "outcome_r": "-1.00"
+    },
+    {
+      "symbol": "BTC-USD",
+      "signal_day": "2026-09-28",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "83456.74",
+      "outcome_r": null
+    },
+    {
+      "symbol": "NVDA",
+      "signal_day": "2026-10-14",
+      "exit_day": null,
+      "status": "OPEN",
+      "entry": "221.30",
+      "outcome_r": null
+    }
+  ]
+}

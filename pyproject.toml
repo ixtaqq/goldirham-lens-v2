@@ -1,0 +1,176 @@
+[project]
+name = "goldirham-lens"
+version = "2.0.0a1"
+description = "Numbers-first daily investment research briefing, delivered to a private Telegram chat."
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [{ name = "ixtaqq" }]
+# Core dependencies are everything the Telegram webhook needs. Keep this list free of
+# numpy, pandas, exchange-calendars and yfinance so the serverless function stays small.
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyyaml>=6.0.2",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "httpx>=0.28",
+    "structlog>=24.4",
+    "fastapi>=0.115",
+]
+
+[project.optional-dependencies]
+pipeline = [
+    "alembic>=1.14",
+    "typer>=0.15",
+    "exchange-calendars>=4.6",
+    "pandas>=2.2",
+    "yfinance>=0.2.50",
+    "feedparser>=6.0.11",
+    "anthropic>=0.40",
+]
+
+[project.scripts]
+lens = "lens.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "import-linter>=2.1",
+    "poethepoet>=0.31",
+    "types-pyyaml>=6.0",
+    "pandas-stubs>=2.2",
+]
+test = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "hypothesis>=6.120",
+    "respx>=0.21",
+    "syrupy>=4.8",
+]
+ops = ["pip-audit>=2.7"]
+
+[tool.uv]
+default-groups = ["dev", "test"]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lens"]
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC", "DTZ", "PT", "N", "S", "C4", "PERF"]
+ignore = ["S101", "RUF001", "RUF002", "RUF003", "SIM905"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S108", "S311", "DTZ001", "PERF401"]
+"migrations/**" = ["N999"]
+
+[tool.ruff.lint.pycodestyle]
+# The formatter keeps code at 100 columns; owner-facing message strings may run to 120.
+max-line-length = 120
+
+[tool.ruff.lint.isort]
+known-first-party = ["lens"]
+
+# ---------------------------------------------------------------- mypy
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+mypy_path = "src"
+packages = ["lens"]
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+module = ["exchange_calendars.*", "yfinance.*", "feedparser.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q --strict-markers"
+markers = [
+    "db: needs a real PostgreSQL database (TEST_DATABASE_URL)",
+    "network: calls a live third-party service; run only in the provider-drift workflow",
+]
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.coverage.run]
+source = ["lens"]
+branch = true
+
+[tool.coverage.report]
+skip_covered = true
+show_missing = true
+
+# ---------------------------------------------------------------- import-linter
+[tool.importlinter]
+root_package = "lens"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure: no other lens layer"
+type = "forbidden"
+source_modules = ["lens.domain"]
+forbidden_modules = [
+    "lens.data", "lens.storage", "lens.pipeline", "lens.bot", "lens.delivery",
+    "lens.narrative", "lens.ops", "lens.webhook", "lens.cli", "lens.backtest",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure: no I/O libraries"
+type = "forbidden"
+source_modules = ["lens.domain"]
+forbidden_modules = [
+    "httpx", "sqlalchemy", "asyncpg", "yfinance", "fastapi", "anthropic",
+    "exchange_calendars", "pandas", "numpy", "structlog",
+]
+
+[[tool.importlinter.contracts]]
+name = "Backtest uses the domain only"
+type = "forbidden"
+source_modules = ["lens.backtest"]
+forbidden_modules = [
+    "lens.data", "lens.storage", "lens.pipeline", "lens.bot", "lens.delivery",
+    "lens.narrative", "lens.ops", "lens.webhook", "httpx", "sqlalchemy",
+]
+
+[[tool.importlinter.contracts]]
+name = "Webhook side stays small"
+type = "forbidden"
+source_modules = ["lens.bot", "lens.delivery", "lens.webhook"]
+forbidden_modules = [
+    "lens.data", "lens.backtest", "lens.pipeline", "lens.narrative",
+    "numpy", "pandas", "exchange_calendars", "yfinance", "anthropic", "feedparser",
+]
+
+# ---------------------------------------------------------------- tasks
+[tool.poe.tasks]
+fmt = "ruff format src tests migrations scripts api"
+fmt-check = "ruff format --check src tests migrations scripts api"
+lint = "ruff check src tests migrations scripts api"
+types = "mypy"
+imports = "lint-imports"
+test = "pytest --cov --cov-report=term --cov-fail-under=85"
+coverage-domain = "coverage report --include=src/lens/domain/* --fail-under=95"
+test-fast = "pytest -m 'not db' --no-db"
+webhook-reqs = "python scripts/export_webhook_requirements.py"
+webhook-reqs-check = "python scripts/export_webhook_requirements.py --check"
+db-up = "docker compose -f compose.dev.yaml up -d --wait"
+migrate-local = "alembic upgrade head"
+
+[tool.poe.tasks.check]
+help = "Everything CI runs, in the same order"
+sequence = ["fmt-check", "lint", "types", "imports", "webhook-reqs-check", "test", "coverage-domain"]

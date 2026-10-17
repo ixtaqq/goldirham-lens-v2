@@ -1,0 +1,72 @@
+name: Weekly restore drill
+
+on:
+  schedule:
+    - cron: "30 19 * * 0" # Monday 03:30 MYT
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      drill:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: drill
+          POSTGRES_PASSWORD: drill-only-password
+          POSTGRES_DB: lens_drill
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drill -d lens_drill"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DRILL_DATABASE_URL: postgresql://drill:drill-only-password@localhost:5432/lens_drill
+      DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+      - run: uv sync --frozen --no-default-groups --extra pipeline
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - name: Download the newest backup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh run list --workflow backup.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          test -n "$run_id"
+          gh run download "$run_id" --name lens-backup --dir in
+          (cd in && sha256sum -c SHA256SUMS)
+      - name: Decrypt and restore into the job-local drill database
+        env:
+          AGE_IDENTITY: ${{ secrets.AGE_IDENTITY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$AGE_IDENTITY" > "$RUNNER_TEMP/age.key"
+          age -d -i "$RUNNER_TEMP/age.key" -o in/lens.dump in/lens.dump.age
+          rm "$RUNNER_TEMP/age.key"
+          uv run --no-sync python -c "from lens.ops.backup import ensure_drill_target as g; import os; g(os.environ['DRILL_DATABASE_URL'])"
+          docker run --rm --network host -v "$PWD/in:/in" postgres:17-alpine \
+            pg_restore --no-owner --no-privileges --exit-on-error --dbname "$DRILL_DATABASE_URL" /in/lens.dump
+      - name: Compare with the manifest
+        run: uv run --no-sync lens ops verify-restore --manifest in/manifest.json
+      - name: Record the result
+        if: always()
+        env:
+          HEALTHCHECK_DRILL_URL: ${{ secrets.HEALTHCHECK_DRILL_URL }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          kind=restore_drill_ok
+          suffix=""
+          if [ "$OUTCOME" != "success" ]; then kind=restore_drill_failed; suffix=/fail; fi
+          uv run --no-sync lens ops record "$kind" --detail "run ${{ github.run_id }}" || true
+          if [ -n "${HEALTHCHECK_DRILL_URL:-}" ]; then curl -fsS -m 10 "$HEALTHCHECK_DRILL_URL$suffix" > /dev/null || true; fi

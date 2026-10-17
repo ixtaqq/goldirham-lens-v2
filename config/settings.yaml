@@ -1,0 +1,143 @@
+# Product settings. Secrets never go here; see .env.example.
+owner:
+  timezone: Asia/Kuala_Lumpur
+  base_currency: MYR
+  # daily.yml runs at 23:00 and 23:40 UTC (07:00 / 07:40 MYT); GitHub cron is UTC-only.
+  delivery_deadline: "08:00"
+  healthcheck_grace_minutes: 15
+  detail: concise
+
+risk:
+  risk_per_trade_pct: 1.0 # validated 0 < x <= 5
+  max_position_pct: 20.0
+  max_asset_class_pct:
+    crypto: 30.0
+
+data:
+  min_sessions: 200
+  cross_check_tolerance_pct: 2.0
+  cross_check_sessions: 5
+  suspect_jump_pct:
+    stock: 20.0
+    etf: 20.0
+    crypto: 35.0
+  history_sessions: 420 # fetched per asset; covers MA200 plus a 52-week window
+  degraded_mode_history_sessions: 260
+  single_source_allowed_markets: [XKLS]
+
+# Price increments used to quantise levels. Verify against current exchange rules
+# before changing (see docs/adr/0006-tick-sizes.md).
+ticks:
+  XNYS:
+    - { below: 1, tick: "0.0001" }
+    - { below: null, tick: "0.01" }
+  XKLS:
+    - { below: 1, tick: "0.005" }
+    - { below: 10, tick: "0.01" }
+    - { below: 100, tick: "0.02" }
+    - { below: null, tick: "0.10" }
+  CRYPTO_UTC:
+    - { below: 1, tick: "0.00001" }
+    - { below: 100, tick: "0.001" }
+    - { below: null, tick: "0.01" }
+
+strategies:
+  pullback_in_uptrend:
+    enabled: true
+    params:
+      ma_fast: 50
+      ma_slow: 200
+      trend_multiple: 1.05
+      floor_vs_ma_slow: 0.85
+      max_atr_pct: 8.0
+      rsi_period: 14
+      rsi_trigger: 25
+      support_distance_pct: 1.0
+      swing_radius: 2
+      atr_period: 14
+      atr_stop_multiple: 2.0
+      targets_r: [1.5, 3.0]
+      min_reward_risk: 2.0
+      expiry_days: 120
+      fundamentals: { max_pe: 100, min_revenue_growth_pct: -20 }
+  breakout_52w:
+    enabled: false # research only until a walk-forward report exists
+    params:
+      lookback_sessions: 252
+      volume_multiple: 1.5
+      volume_average_sessions: 50
+      atr_period: 14
+      atr_stop_multiple: 2.0
+      targets_r: [1.5, 3.0]
+      min_reward_risk: 2.0
+      expiry_days: 120
+
+holdings:
+  chandelier_atr_multiple: 3.0
+  exit_below_ma200_sessions: 3
+  drawdown_review_pct: 25
+  stale_review_sessions: 3
+
+alerts:
+  mode: digest # digest | immediate
+  quiet_hours: ["23:00", "07:00"]
+
+scorecard:
+  window_days: 365
+  min_sample: 20
+  exit_model: full_to_t2
+
+narrative:
+  enabled: false
+  model: claude-opus-5-5
+  effort: low
+  max_calls_per_day: 3
+  daily_budget_usd: 0.50
+  max_output_tokens: 1200
+  deadline_seconds: 45
+  # USD per million tokens. Check current pricing and set the date before enabling.
+  input_usd_per_mtok: 4.00
+  output_usd_per_mtok: 20.00
+  rates_verified_on: null
+
+context:
+  fear_greed_url: https://api.alternative.me/fng/
+  headline_feeds:
+    - https://feeds.bbci.co.uk/news/business/rss.xml
+    - https://www.cnbc.com/id/100003114/device/rss/rss.html
+  max_headlines: 5
+
+watchlist:
+  - { symbol: BTC-USD, asset_class: crypto, name: Bitcoin }
+  - { symbol: ETH-USD, asset_class: crypto, name: Ether }
+  - { symbol: SOL-USD, asset_class: crypto, name: Solana }
+  - { symbol: BNB-USD, asset_class: crypto, name: BNB }
+  - { symbol: SPY, asset_class: etf, name: SPDR S&P 500 ETF }
+  - { symbol: QQQ, asset_class: etf, name: Invesco QQQ }
+  - { symbol: AAPL, asset_class: stock, name: Apple }
+  - { symbol: MSFT, asset_class: stock, name: Microsoft }
+  - { symbol: NVDA, asset_class: stock, name: NVIDIA }
+  - { symbol: 1155.KL, asset_class: stock, name: Maybank }
+  - { symbol: 5183.KL, asset_class: stock, name: Petronas Chemicals }
+  - { symbol: 1295.KL, asset_class: stock, name: Public Bank }
+
+# Primary and cross-check provider per market. Symbol-level overrides win.
+providers:
+  markets:
+    XNYS: { primary: yahoo, cross_check: alphavantage }
+    XKLS: { primary: yahoo, cross_check: null }
+    CRYPTO_UTC: { primary: coinbase, cross_check: yahoo }
+  symbols:
+    BNB-USD: { primary: binance, cross_check: yahoo }
+
+# Exchange holidays missing from exchange_calendars. Add a day only after checking the
+# exchange's own holiday list; `lens readiness` flags days every asset of a market lacks.
+calendar_holidays:
+  XKLS:
+    - 2026-03-20 # Hari Raya Aidilfitri
+    - 2026-06-02 # replacement public holiday
+
+benchmarks:
+  XNYS: SPY
+  XKLS: "^KLSE"
+  CRYPTO_UTC: BTC-USD

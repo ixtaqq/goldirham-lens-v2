@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: lens
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: lens
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lens -d lens"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://lens:ci-only-password@127.0.0.1:5432/lens_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+      - run: uv sync --frozen --all-extras
+      - name: Quality gate (format, lint, strict types, import contracts, webhook requirements, tests)
+        run: uv run --no-sync poe check
+      - name: Showcase demo data matches the pipeline
+        run: uv run --no-sync lens demo export --check
+      - name: Migrations round-trip and drift check
+        env:
+          DATABASE_URL_DIRECT: postgresql+asyncpg://lens:ci-only-password@127.0.0.1:5432/lens
+        run: |
+          uv run --no-sync alembic upgrade head
+          uv run --no-sync alembic check
+          uv run --no-sync alembic downgrade base
+          uv run --no-sync alembic upgrade head
+      - name: Dependency audit
+        run: |
+          uv export --frozen --no-dev --all-extras --no-hashes --no-emit-project > "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit -r "$RUNNER_TEMP/requirements.txt" --progress-spinner off
+
+  repository:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 detect --source /repo --no-banner --redact
+      - name: Workflow lint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+      - name: Shell lint
+        run: find scripts -name '*.sh' -print0 | xargs -0 -r shellcheck
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:e2e
+      - name: Audit shipped dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+      # Dev tooling: braces <=3.0.3 (via eslint-config-next) has no patched release yet.
+      - name: Audit dev tooling for critical issues
+        run: npm audit --audit-level=critical

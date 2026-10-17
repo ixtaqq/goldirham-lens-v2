@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+
+import pytest
+
+from lens.ops.backup import UnsafeTargetError, compare_manifests, ensure_drill_target
+
+NOW = datetime(2026, 10, 16, 3, 0, tzinfo=UTC)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "postgresql://u:p@db.supabase.co:5432/postgres",
+        "postgresql://u:p@localhost:5432/postgres",
+        "postgresql://u:p@localhost:5432/lens%5Fdrill%2F..%2Fpostgres",
+        "postgresql://u:p@localhost:5432/lens_drill?dbname=postgres",
+        "postgresql://u:p@localhost:5432/lens_drill?host=db.supabase.co",
+        "postgresql://u:p@localhost:5432/",
+        "postgresql://u:p@127.0.0.2:5432/lens_drill",
+        "",
+    ],
+)
+def test_restore_drill_refuses_anything_but_the_local_drill_database(url: str) -> None:
+    """Scenario 15: by name, percent-encoding, or query-string tricks."""
+    with pytest.raises(UnsafeTargetError):
+        ensure_drill_target(url)
+
+
+def test_local_drill_database_is_accepted() -> None:
+    ensure_drill_target("postgresql://lens:x@localhost:5432/lens_drill")
+    ensure_drill_target("postgresql+asyncpg://lens:x@127.0.0.1:5432/lens%5Fdrill")
+
+
+def _manifest(created: datetime, rows: int = 3) -> dict[str, object]:
+    return {
+        "created_at": created.isoformat(),
+        "revision": "0001",
+        "tables": {"bars": {"rows": rows, "md5": "abc"}, "owners": {"rows": 1, "md5": "def"}},
+    }
+
+
+def test_matching_restore_passes() -> None:
+    assert compare_manifests(_manifest(NOW - timedelta(hours=2)), _manifest(NOW), now=NOW).ok
+
+
+def test_stale_backup_and_missing_rows_fail_the_drill() -> None:
+    result = compare_manifests(
+        _manifest(NOW - timedelta(hours=30)), _manifest(NOW, rows=2), now=NOW
+    )
+    assert not result.ok
+    assert len(result.differences) == 2
+    assert result.differences[0].startswith("backup is older than")
+    assert result.differences[1].startswith("bars: expected")

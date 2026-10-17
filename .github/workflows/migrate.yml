@@ -1,0 +1,39 @@
+name: Migrate production schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type "migrate" to apply pending migrations
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  backup-first:
+    if: inputs.confirm == 'migrate' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/backup.yml
+    secrets:
+      DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+      AGE_RECIPIENT: ${{ secrets.AGE_RECIPIENT }}
+      HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
+
+  migrate:
+    needs: backup-first
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The owner is the required reviewer on this environment, so every migration waits for approval.
+    environment: production
+    env:
+      DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_MIGRATOR }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+      - run: uv sync --frozen --no-default-groups --extra pipeline
+      - run: uv run --no-sync alembic current
+      - run: uv run --no-sync alembic upgrade head
+      - run: uv run --no-sync alembic current

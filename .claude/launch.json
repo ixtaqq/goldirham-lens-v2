@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "showcase",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["web/scripts/serve.mjs", "web/out", "4173"],
+      "port": 4173
+    }
+  ]
+}

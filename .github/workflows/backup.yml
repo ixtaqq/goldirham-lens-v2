@@ -1,0 +1,65 @@
+name: Nightly backup
+
+on:
+  schedule:
+    - cron: "15 18 * * *" # 02:15 MYT
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      DATABASE_URL_DIRECT:
+        required: true
+      AGE_RECIPIENT:
+        required: true
+      HEALTHCHECK_BACKUP_URL:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_DIRECT }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+      - run: uv sync --frozen --no-default-groups --extra pipeline
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq age
+      - name: Manifest, dump, checksum, encrypt
+        env:
+          AGE_RECIPIENT: ${{ secrets.AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p staging out
+          uv run --no-sync lens ops manifest --out staging/manifest.json
+          LIBPQ_URL="${DATABASE_URL_DIRECT/+asyncpg/}"
+          docker run --rm --network host -v "$PWD/staging:/out" postgres:17-alpine \
+            pg_dump --format=custom --no-owner --no-privileges --file=/out/lens.dump.partial "$LIBPQ_URL"
+          mv staging/lens.dump.partial staging/lens.dump
+          age -r "$AGE_RECIPIENT" -o staging/lens.dump.age staging/lens.dump
+          rm staging/lens.dump
+          (cd staging && sha256sum lens.dump.age manifest.json > SHA256SUMS)
+          mv staging/* out/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lens-backup
+          path: out/
+          retention-days: 35
+          if-no-files-found: error
+      - name: Record and report
+        env:
+          HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
+        run: |
+          uv run --no-sync lens ops record backup_ok --detail "run ${{ github.run_id }}"
+          if [ -n "${HEALTHCHECK_BACKUP_URL:-}" ]; then curl -fsS -m 10 --retry 3 "$HEALTHCHECK_BACKUP_URL" > /dev/null; fi
+      - name: Report failure
+        if: failure()
+        env:
+          HEALTHCHECK_BACKUP_URL: ${{ secrets.HEALTHCHECK_BACKUP_URL }}
+        run: if [ -n "${HEALTHCHECK_BACKUP_URL:-}" ]; then curl -fsS -m 10 "$HEALTHCHECK_BACKUP_URL/fail" > /dev/null; fi

@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T23:50:00+08:00",
+  "title": "Design System: Goldirham Lens",
+  "extensions": {
+    "colorMeta": {
+      "carbon": { "role": "neutral", "displayName": "Carbon", "tonalRamp": ["#020504", "#07110E", "#0D1D18", "#162A23", "#22392F", "#33493F", "#4A6157", "#6B7F76"] },
+      "graphite": { "role": "neutral", "displayName": "Graphite", "tonalRamp": ["#070C0A", "#101A16", "#16231E", "#1F2E28", "#2B3C35", "#3B4D45", "#52645C", "#71827A"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "tonalRamp": ["#5E5C57", "#7D7B75", "#9C9A93", "#B9B7B0", "#D2D0C9", "#E4E2DB", "#F0EEE7", "#F8F7F3"] },
+      "fog": { "role": "neutral", "displayName": "Fog", "tonalRamp": ["#2F3532", "#454D49", "#5D6762", "#75807A", "#8D9992", "#A6B0AA", "#C1C8C4", "#DDE2DF"] },
+      "mint": { "role": "primary", "displayName": "Oxidised Mint", "tonalRamp": ["#1D4A41", "#2A6458", "#3A8070", "#4E9C8A", "#64B8A5", "#79D5C2", "#A3E3D5", "#CFF1E9"] },
+      "loss": { "role": "secondary", "displayName": "Loss", "tonalRamp": ["#5A2620", "#7A342C", "#9B4339", "#BC5548", "#D66A5D", "#E88078", "#F0A69F", "#F8CFCA"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The hero headline only." },
+      "section": { "displayName": "Section", "purpose": "Section headings, condensed." },
+      "lede": { "displayName": "Lede", "purpose": "The hero introduction." },
+      "body": { "displayName": "Body", "purpose": "Prose, controls and Telegram text." },
+      "data": { "displayName": "Data", "purpose": "Figures, tickers, reason codes, session dates, sources and data labels. Mono, tabular." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.23, 1, 0.32, 1)", "purpose": "Anything entering or exiting." },
+      { "name": "ease-in-out", "value": "cubic-bezier(0.77, 0, 0.175, 1)", "purpose": "Movement on screen: chart and indicator draw-ins." },
+      { "name": "motion-press", "value": "140ms", "purpose": "Press feedback, scale(0.97)." },
+      { "name": "motion-ui", "value": "200ms", "purpose": "Tooltips, menu sheet, tab and status changes." },
+      { "name": "motion-reveal", "value": "280ms", "purpose": "Briefing assembly, pipeline rows, day-switch entrances." },
+      { "name": "motion-explain", "value": "600ms", "purpose": "Explanatory steps, field fade-in, chart bars." },
+      { "name": "stagger", "value": "60ms", "purpose": "Grouped entrances." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action in a viewport.",
+      "html": "<a class=\"ds-btn-primary\" href=\"#briefing\">Read a sample briefing</a>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; padding: 12px 20px; background: #f0eee7; color: #07110e; border: 1px solid #f0eee7; font: 500 14px/1.4 Geist, system-ui, sans-serif; text-decoration: none; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), background-color 200ms ease; } .ds-btn-primary:hover { background: rgb(240 238 231 / 0.9); } .ds-btn-primary:focus-visible { outline: 2px solid #f0eee7; outline-offset: 3px; } .ds-btn-primary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A second path beside the primary action.",
+      "html": "<a class=\"ds-btn-secondary\" href=\"#pipeline\">See how one is made</a>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; padding: 12px 20px; background: transparent; color: #f0eee7; border: 1px solid rgb(141 153 146 / 0.42); font: 500 14px/1.4 Geist, system-ui, sans-serif; text-decoration: none; transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), border-color 200ms ease; } .ds-btn-secondary:hover { border-color: #f0eee7; } .ds-btn-secondary:focus-visible { outline: 2px solid #f0eee7; outline-offset: 3px; } .ds-btn-secondary:active { transform: scale(0.97); }"
+    },
+    {
+      "name": "Day Tab",
+      "kind": "nav",
+      "refersTo": "day-tab-selected",
+      "description": "One cell of the three-day ledger strip.",
+      "html": "<a class=\"ds-day-tab\" aria-selected=\"true\" href=\"#day-setup\"><span class=\"ds-day-date\">Thu 15 Oct 2026</span><span class=\"ds-day-title\">Setup day</span></a>",
+      "css": ".ds-day-tab { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 20px; border: 1px solid rgb(141 153 146 / 0.22); color: #f0eee7; text-decoration: none; } .ds-day-tab[aria-selected=\"true\"] { background: #101a16; box-shadow: inset 0 -1px 0 #f0eee7; } .ds-day-tab:hover { background: #101a16; } .ds-day-tab:focus-visible { outline: 2px solid #f0eee7; outline-offset: 3px; } .ds-day-date { font: 400 13px/1.5 'Geist Mono', ui-monospace, monospace; color: #8d9992; } .ds-day-title { font: 600 24px/1.1 'Barlow Condensed', 'Arial Narrow', sans-serif; }"
+    },
+    {
+      "name": "Telegram Message",
+      "kind": "card",
+      "refersTo": "message",
+      "description": "The Python renderer's Telegram text, shown as sent.",
+      "html": "<article class=\"ds-message\"><header class=\"ds-message-head\"><span>Goldirham Lens bot</span><span>07:01 MYT</span></header><p class=\"ds-message-body\"><strong>Setups</strong>\nNo new setups today. Most days look like this, and that is the point.</p></article>",
+      "css": ".ds-message { background: #101a16; border: 1px solid rgb(141 153 146 / 0.42); color: #f0eee7; } .ds-message-head { display: flex; justify-content: space-between; padding: 8px 20px; border-bottom: 1px solid rgb(141 153 146 / 0.22); font: 400 13px/1.5 'Geist Mono', ui-monospace, monospace; color: #8d9992; } .ds-message-body { margin: 0; padding: 16px 20px; white-space: pre-wrap; font: 400 15px/1.55 Geist, system-ui, sans-serif; font-variant-numeric: tabular-nums; } .ds-message-body strong { font-weight: 600; }"
+    },
+    {
+      "name": "Ledger Row",
+      "kind": "custom",
+      "description": "A rule row from the strategy reference with its reason codes.",
+      "html": "<table class=\"ds-ledger\"><tr><th scope=\"row\">Trend</th><td>50-session average &gt; 1.05 x 200-session average</td><td><code>trend_ok</code>, <code>trend_filter_failed</code></td></tr></table>",
+      "css": ".ds-ledger { border-collapse: collapse; width: 100%; color: rgb(240 238 231 / 0.85); font: 400 15px/1.5 Geist, system-ui, sans-serif; } .ds-ledger tr { border-bottom: 1px solid rgb(141 153 146 / 0.22); transition: background-color 150ms ease; } .ds-ledger tr:hover { background: #16231e; } .ds-ledger th { text-align: left; padding: 12px 24px 12px 0; color: #f0eee7; font-weight: 500; } .ds-ledger td { padding: 12px 24px 12px 0; } .ds-ledger code { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.92em; color: #f0eee7; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The checked ledger",
+    "overview": "A research ledger at night. The page is carbon ground under a fixed field of faint price traces and a 12-column grid of 1px rules. Content sits in ruled sections, figures are set in mono with their session date and source beside them, and the sample briefing is shown as the actual Telegram text. Nothing is glass, nothing is rounded, nothing glows.\n\nMotion explains in the order the product works. A trace crosses the verification frame and turns mint for a moment. The briefing arrives section by section. The pipeline section pins and steps through collect, check, measure, decide, send. Charts draw once. Everything else stays still.",
+    "keyCharacteristics": [
+      "A fixed signal field behind everything: WebGL2 traces, a Canvas 2D fallback and a build-time SVG poster, all drawn from the same demo fixture.",
+      "Ruled sections on carbon at 70 to 80% opacity, so the field reads strongly in the hero and faintly elsewhere.",
+      "Telegram messages as graphite panels with a 1px strong rule and a mono header row."
+    ],
+    "rules": [
+      { "name": "The Evidence Rule", "body": "Mint appears only where something was verified: the trace inside the verification frame, a passed check, a healthy data status. It is never decoration.", "section": "colors" },
+      { "name": "The One Accent Rule", "body": "No other hue enters the palette. Charts use paper, fog, mint and loss only.", "section": "colors" },
+      { "name": "The Figures Are Mono Rule", "body": "Any number a visitor could compare with another number is set in Geist Mono with tabular figures, and it is the string Python produced. The page never formats a figure itself.", "section": "typography" },
+      { "name": "The No Glass Rule", "body": "No shadows, blur, glow or translucent cards.", "section": "elevation" }
+    ],
+    "dos": [
+      "Show the session date and source next to figures.",
+      "Show a failed check with its reason code, struck through or in fog, at full contrast.",
+      "Let a quiet day look quiet.",
+      "Give every moving layer a Pause motion control and a still fallback."
+    ],
+    "donts": [
+      "Use candlestick imagery, neon tickers, bull and bear motifs or trading-floor photography.",
+      "Animate a number counting up through values that were never true.",
+      "Add a status light or \"live\" badge; the showcase runs on demo data.",
+      "Put a kicker or eyebrow label above a heading.",
+      "Fade withheld data below contrast to show it dropped out."
+    ]
+  }
+}

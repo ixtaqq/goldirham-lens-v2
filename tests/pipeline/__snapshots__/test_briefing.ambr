@@ -1,0 +1,160 @@
+# serializer version: 1
+# name: test_degraded_briefing
+  '''
+  <b>Goldirham Lens</b> · Fri 16 Oct 2026
+  Data as of Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
+  <b>Degraded briefing.</b> The database was unreachable.
+  
+  <b>Data status</b>
+  • NVDA: fewer verified sessions than required
+  • pullback_in_uptrend 52df5d457a0c: strategy has no backtest report yet, so it is not live
+  • database: unavailable this run
+  
+  No positions recorded yet. Add one with /buy.
+  
+  <b>Setups</b>
+  No new setups today. Most days look like this, and that is the point.
+  
+  <b>Market</b>
+  Regime: risk-on · 100.0% of watchlist above its 200-day average
+  SPY USD 647.73 +0.1% · BTC-USD USD 77,727.97 +0.1%
+  
+  <i>Research and decision support only. Not financial advice. Goldirham Lens never places trades. Targets are scenarios, and gaps can exceed a planned stop.</i>
+  <code>cycle 3f2a9c1e · pullback_in_uptrend 52df5d457a0c</code>
+  Ask /why TICKER for the full reasoning on any asset.
+  '''
+# ---
+# name: test_exit_review_is_listed_first_with_its_reason
+  '''
+  <b>Goldirham Lens</b> · Fri 16 Oct 2026
+  Data as of Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
+  
+  <b>Data status</b>
+  • NVDA: fewer verified sessions than required
+  • pullback_in_uptrend 52df5d457a0c: strategy has no backtest report yet, so it is not live
+  
+  <b>Portfolio</b> · MYR 11,912.43
+  FX dated 15 Oct
+  <b>EXIT</b> AAPL USD 18.87 (15 Oct) −8.0% · 14.0% of portfolio · −82.8% unrealised
+     closed below the trailing review stop; closed below the 200-session average for several sessions; drawdown from the post-entry peak is large. Review stop USD 148.49.
+  <b>REDUCE</b> 1155.KL MYR 10.24 (15 Oct) +0.0% · 86.0% of portfolio · +11.2% unrealised
+     position is above the concentration cap. Review stop MYR 9.98.
+  Exposure: stock 100.0%
+  
+  <b>What changed</b>
+  • AAPL moved −8.0%
+  • AAPL review HOLD → EXIT
+  
+  <b>Setups</b>
+  No new setups today. Most days look like this, and that is the point.
+  
+  <b>Market</b>
+  Regime: risk-on · 80.0% of watchlist above its 200-day average
+  SPY USD 647.73 +0.1% · BTC-USD USD 77,727.97 +0.1%
+  Crypto Fear &amp; Greed: 63 (Greed)
+  Headlines (context only):
+  • Markets steady ahead of rate decision <i>(Demo Wire)</i>
+  
+  <i>Research and decision support only. Not financial advice. Goldirham Lens never places trades. Targets are scenarios, and gaps can exceed a planned stop.</i>
+  <code>cycle 3f2a9c1e · pullback_in_uptrend 52df5d457a0c</code>
+  Ask /why TICKER for the full reasoning on any asset.
+  '''
+# ---
+# name: test_holding_without_fx_is_shown_and_excluded
+  '''
+  <b>Goldirham Lens</b> · Fri 16 Oct 2026
+  Data as of Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
+  
+  <b>Data status</b>
+  • NVDA: fewer verified sessions than required
+  • pullback_in_uptrend 52df5d457a0c: strategy has no backtest report yet, so it is not live
+  
+  <b>Portfolio</b> · MYR 10,244.00
+  Not in total (no price or FX rate): AAPL
+  <b>REDUCE</b> 1155.KL MYR 10.24 (15 Oct) +0.0% · 100.0% of portfolio · +11.2% unrealised
+     position is above the concentration cap. Review stop MYR 9.98.
+  <b>HOLD</b> AAPL USD 167.78 (15 Oct) +0.2% · +52.5% unrealised
+  Exposure: stock 100.0%
+  
+  <b>Setups</b>
+  No new setups today. Most days look like this, and that is the point.
+  
+  <b>Market</b>
+  Regime: risk-on · 100.0% of watchlist above its 200-day average
+  SPY USD 647.73 +0.1% · BTC-USD USD 77,727.97 +0.1%
+  Crypto Fear &amp; Greed: 63 (Greed)
+  Headlines (context only):
+  • Markets steady ahead of rate decision <i>(Demo Wire)</i>
+  
+  <i>Research and decision support only. Not financial advice. Goldirham Lens never places trades. Targets are scenarios, and gaps can exceed a planned stop.</i>
+  <code>cycle 3f2a9c1e · pullback_in_uptrend 52df5d457a0c</code>
+  Ask /why TICKER for the full reasoning on any asset.
+  '''
+# ---
+# name: test_live_strategy_with_holdings_and_fx
+  '''
+  <b>Goldirham Lens</b> · Fri 16 Oct 2026
+  Data as of Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
+  
+  <b>Data status</b>
+  • NVDA: fewer verified sessions than required
+  
+  <b>Portfolio</b> · MYR 25,079.10
+  FX dated 15 Oct
+  <b>REDUCE</b> 1155.KL MYR 10.24 (15 Oct) +0.0% · 40.8% of portfolio · +11.2% unrealised
+     position is above the concentration cap. Review stop MYR 9.98.
+  <b>REDUCE</b> AAPL USD 167.78 (15 Oct) +0.2% · 59.2% of portfolio · +52.5% unrealised
+     position is above the concentration cap. Review stop USD 162.88.
+  Exposure: stock 100.0%
+  
+  <b>What changed</b>
+  • New setup: QQQ
+  
+  <b>Setups</b> (1)
+  
+  <b>QQQ</b> Invesco QQQ · pullback_in_uptrend
+  Entry USD 190.33 · Stop USD 183.52 (−3.6%)
+  T1 USD 200.54 (+5.4%) · T2 USD 210.76 (+10.7%)
+  Size 20.0% of equity (capped) · reward to risk 3.00
+  Why: trend up, above floor, volatility in range, oversold
+  Invalidation: a close below USD 183.52.
+  <i>test · session 15 Oct · verified</i>
+  
+  <b>Market</b>
+  Regime: risk-on · 100.0% of watchlist above its 200-day average
+  SPY USD 647.73 +0.1% · BTC-USD USD 77,727.97 +0.1%
+  Crypto Fear &amp; Greed: 63 (Greed)
+  Headlines (context only):
+  • Markets steady ahead of rate decision <i>(Demo Wire)</i>
+  
+  <i>Research and decision support only. Not financial advice. Goldirham Lens never places trades. Targets are scenarios, and gaps can exceed a planned stop.</i>
+  <code>cycle 3f2a9c1e · pullback_in_uptrend 52df5d457a0c</code>
+  Ask /why TICKER for the full reasoning on any asset.
+  '''
+# ---
+# name: test_quiet_day_with_no_live_strategy
+  '''
+  <b>Goldirham Lens</b> · Fri 16 Oct 2026
+  Data as of Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
+  
+  <b>Data status</b>
+  • NVDA: fewer verified sessions than required
+  • pullback_in_uptrend 52df5d457a0c: strategy has no backtest report yet, so it is not live
+  
+  No positions recorded yet. Add one with /buy.
+  
+  <b>Setups</b>
+  No new setups today. Most days look like this, and that is the point.
+  
+  <b>Market</b>
+  Regime: risk-on · 100.0% of watchlist above its 200-day average
+  SPY USD 647.73 +0.1% · BTC-USD USD 77,727.97 +0.1%
+  Crypto Fear &amp; Greed: 63 (Greed)
+  Headlines (context only):
+  • Markets steady ahead of rate decision <i>(Demo Wire)</i>
+  
+  <i>Research and decision support only. Not financial advice. Goldirham Lens never places trades. Targets are scenarios, and gaps can exceed a planned stop.</i>
+  <code>cycle 3f2a9c1e · pullback_in_uptrend 52df5d457a0c</code>
+  Ask /why TICKER for the full reasoning on any asset.
+  '''
+# ---
