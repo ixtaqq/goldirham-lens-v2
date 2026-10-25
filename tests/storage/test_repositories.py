@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import replace
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
 
 from lens.domain.instruments import AssetClass, Instrument
 from lens.domain.portfolio import FxRate, TxKind
+from lens.settings import OwnerSettings
 from lens.storage.cycles import STALE_SENDING, ClaimOutcome, CycleRepo, DeliveryState
 from lens.storage.db import Database
 from lens.storage.ledger import LedgerRepo
@@ -133,6 +134,34 @@ async def test_confirmation_is_used_exactly_once(db: Database) -> None:
     assert sum(r is not None for r in results) == 1
     async with db.session() as s:
         assert await OpsRepo(s).consume_action(token, 999, NOW) is None
+
+
+async def test_on_time_rate_follows_the_owner_deadline(db: Database) -> None:
+    await _owner(db)
+    owner = OwnerSettings(delivery_deadline=time(9, 0))  # 01:00 UTC
+    sent_at = {DAY: time(0, 30), DAY + timedelta(days=1): time(1, 30)}
+    for day, at in sent_at.items():
+        async with db.session() as s:
+            stored = await CycleRepo(s).save_briefing(
+                owner_id=OWNER,
+                day=day,
+                run_id=None,
+                mode="deterministic",
+                document={},
+                chunks=["a"],
+                inputs={},
+                code_version="x",
+            )
+            assert stored.delivery_id is not None
+            sent = datetime.combine(day, at, UTC)
+            token = await CycleRepo(s).claim_delivery(
+                stored.delivery_id, allowed=frozenset({DeliveryState.COMPOSED}), now=sent
+            )
+            assert token is not None
+            await CycleRepo(s).finish_delivery(stored.delivery_id, token, DeliveryState.SENT, sent)
+
+    async with db.session() as s:
+        assert await CycleRepo(s).on_time_rate(OWNER, DAY, owner.deadline_on) == (1, 2)
 
 
 async def test_delivered_briefing_is_never_replaced(db: Database) -> None:

@@ -11,7 +11,6 @@ from datetime import UTC, date, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import TypeVar
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.exc import DBAPIError, OperationalError
 
@@ -98,8 +97,7 @@ def migration_head() -> str:
 
 
 def local_day(settings: Settings, now: datetime) -> tuple[date, bool]:
-    local = now.astimezone(ZoneInfo(settings.owner.timezone))
-    return local.date(), local.time() > settings.owner.delivery_deadline
+    return settings.owner.today(now), settings.owner.is_late(now)
 
 
 @dataclass(slots=True)

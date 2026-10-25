@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 
@@ -26,6 +26,19 @@ def test_owner_today_is_the_owner_calendar_day_not_utc() -> None:
 
     assert owner.today(datetime(2026, 10, 24, 23, 30, tzinfo=UTC)) == date(2026, 10, 25)
     assert owner.today(datetime(2026, 10, 25, 15, 59, tzinfo=UTC)) == date(2026, 10, 25)
+
+
+def test_the_delivery_deadline_is_the_owner_local_time_on_the_briefing_day() -> None:
+    owner = load_settings().owner
+    assert owner.deadline_on(date(2026, 10, 16)) == datetime(2026, 10, 16, 0, 0, tzinfo=UTC)
+    assert not owner.is_late(datetime(2026, 10, 16, 0, 0, tzinfo=UTC))
+    assert owner.is_late(datetime(2026, 10, 16, 0, 1, tzinfo=UTC))
+
+    london = owner.model_copy(
+        update={"timezone": "Europe/London", "delivery_deadline": time(7, 30)}
+    )
+    assert london.deadline_on(date(2026, 7, 1)) == datetime(2026, 7, 1, 6, 30, tzinfo=UTC)
+    assert london.deadline_on(date(2026, 12, 1)) == datetime(2026, 12, 1, 7, 30, tzinfo=UTC)
 
 
 def _write(tmp_path: Path, mutate: object) -> Path:

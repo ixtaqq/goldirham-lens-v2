@@ -32,6 +32,12 @@ class OwnerSettings(_Model):
     def today(self, now: datetime) -> date:
         return now.astimezone(ZoneInfo(self.timezone)).date()
 
+    def deadline_on(self, day: date) -> datetime:
+        return datetime.combine(day, self.delivery_deadline, ZoneInfo(self.timezone))
+
+    def is_late(self, now: datetime) -> bool:
+        return now > self.deadline_on(self.today(now))
+
 
 class RiskSettings(_Model):
     risk_per_trade_pct: Decimal = Field(Decimal("1.0"), gt=0, le=5)
