@@ -147,3 +147,38 @@ def test_with_pg_env_runs_a_command_with_the_password_only_in_its_environment(
     assert seen["env"]["PGPASSWORD"] == "s3cret-pw"
     assert "s3cret-pw" not in " ".join(seen["command"])
     assert "s3cret-pw" not in result.output
+
+
+def test_research_writes_a_walk_forward_report(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake_collect(monkeypatch)
+    result = runner.invoke(
+        cli.app,
+        [
+            "research",
+            "--sweep",
+            "rsi_trigger=25,35",
+            "--sweep",
+            "atr_stop_multiple=2.0",
+            "--folds",
+            "2",
+            "--baseline-runs",
+            "3",
+            "--out",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    report = next(tmp_path.glob("research-pullback_in_uptrend-*.json"))
+    body = json.loads(report.read_text(encoding="utf-8"))
+    assert len(body["candidates"]) == 2
+    assert len(body["folds"]) == 2
+    assert "## Verdict" in report.with_suffix(".md").read_text(encoding="utf-8")
+
+
+def test_research_rejects_a_malformed_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
+    _fake_collect(monkeypatch)
+    result = runner.invoke(cli.app, ["research", "--sweep", "rsi_trigger"])
+    assert result.exit_code != 0
+    assert "NAME=V1,V2" in result.output

@@ -157,6 +157,30 @@ def doctor(settings_path: SettingsOption = None) -> None:
     raise typer.Exit(0 if all(ok for _, ok, _ in rows) else 1)
 
 
+def _histories(settings: Settings, secrets: Secrets, sessions: int) -> list[Any]:
+    """Completed, usable daily bars for the watchlist, fetched from the providers."""
+    from lens.backtest.engine import AssetHistory
+    from lens.data.collect import Collector, provider_factories
+
+    long_settings = settings.model_copy(
+        update={"data": settings.data.model_copy(update={"history_sessions": min(sessions, 1000)})}
+    )
+    key = (
+        secrets.alpha_vantage_api_key.get_secret_value() if secrets.alpha_vantage_api_key else None
+    )
+    collector = Collector(long_settings, datetime.now(UTC), factories=provider_factories(key))
+    data = _run(collector.collect_all(list(settings.instruments())))
+    return [
+        AssetHistory(
+            item.instrument,
+            tuple(b for b in item.bars if b.usable),
+            settings.tick_rule(item.instrument.market),
+        )
+        for item in data.values()
+        if item.bars
+    ]
+
+
 @app.command()
 def backtest(
     strategy: Annotated[
@@ -170,9 +194,7 @@ def backtest(
     settings_path: SettingsOption = None,
 ) -> None:
     """Replay history through the live rules and save a report (required before activation)."""
-    from lens.backtest.engine import AssetHistory
     from lens.backtest.report import build_report
-    from lens.data.collect import Collector, provider_factories
     from lens.domain.strategy.base import RiskInputs
     from lens.pipeline.analysis import strategies_from
     from lens.storage.db import Database
@@ -182,23 +204,7 @@ def backtest(
     configured = next((s for s in strategies_from(settings) if s.name == strategy), None)
     if configured is None:
         raise typer.BadParameter(f"{strategy} is not configured in settings.yaml")
-    long_settings = settings.model_copy(
-        update={"data": settings.data.model_copy(update={"history_sessions": min(sessions, 1000)})}
-    )
-    key = (
-        secrets.alpha_vantage_api_key.get_secret_value() if secrets.alpha_vantage_api_key else None
-    )
-    collector = Collector(long_settings, datetime.now(UTC), factories=provider_factories(key))
-    data = _run(collector.collect_all(list(settings.instruments())))
-    histories = [
-        AssetHistory(
-            item.instrument,
-            tuple(b for b in item.bars if b.usable),
-            settings.tick_rule(item.instrument.market),
-        )
-        for item in data.values()
-        if item.bars
-    ]
+    histories = _histories(settings, secrets, sessions)
     start = min(h.bars[0].day for h in histories)
     end = max(h.bars[-1].day for h in histories)
     report = build_report(
@@ -243,6 +249,65 @@ def backtest(
     typer.echo(
         f"stored report {report_id} for {configured.name} {configured.version} ({report.report_hash[:16]})"
     )
+
+
+@app.command()
+def research(
+    sweep: Annotated[
+        list[str],
+        typer.Option(
+            help="NAME=V1,V2 to try; repeat for more parameters (a grid of every combination)"
+        ),
+    ],
+    strategy: Annotated[
+        str, typer.Option(help="Strategy name from settings.yaml")
+    ] = "pullback_in_uptrend",
+    folds: Annotated[int, typer.Option(help="Walk-forward test windows over the last half")] = 3,
+    min_trades: Annotated[int, typer.Option(help="Training trades a candidate needs")] = 10,
+    sessions: Annotated[int, typer.Option(help="History to fetch per asset (max 1000)")] = 1000,
+    baseline_runs: Annotated[int, typer.Option(help="Random-entry baseline runs")] = 200,
+    out: Annotated[Path, typer.Option(help="Directory for the Markdown and JSON report")] = Path(
+        "reports"
+    ),
+    settings_path: SettingsOption = None,
+) -> None:
+    """Sweep parameters with walk-forward testing. Writes a report; changes no settings."""
+    from lens.backtest.research import parameter_grid, walk_forward
+    from lens.domain.strategy.base import RiskInputs
+
+    grid: dict[str, list[str]] = {}
+    for item in sweep:
+        name, _, values = item.partition("=")
+        if not name or not values:
+            raise typer.BadParameter(f"{item!r} should look like NAME=V1,V2")
+        grid[name.strip()] = [v.strip() for v in values.split(",") if v.strip()]
+    settings, secrets = _setup(settings_path)
+    entry = settings.strategies.get(strategy)
+    if entry is None:
+        raise typer.BadParameter(f"{strategy} is not configured in settings.yaml")
+    try:
+        candidates = parameter_grid(strategy, entry.params, grid)
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
+    histories = _histories(settings, secrets, sessions)
+    start = min(h.bars[0].day for h in histories)
+    end = max(h.bars[-1].day for h in histories)
+    report = walk_forward(
+        histories,
+        candidates,
+        RiskInputs(settings.risk.risk_per_trade_pct, settings.risk.max_position_pct),
+        start=start,
+        end=end,
+        folds=folds,
+        min_trades=min_trades,
+        min_sessions=settings.data.min_sessions,
+        baseline_runs=baseline_runs,
+    )
+    out.mkdir(parents=True, exist_ok=True)
+    stem = out / f"research-{strategy}-{report.report_hash[:12]}"
+    stem.with_suffix(".md").write_text(report.markdown, encoding="utf-8")
+    stem.with_suffix(".json").write_text(json.dumps(report.body, indent=2), encoding="utf-8")
+    typer.echo(report.markdown)
 
 
 @strategy_app.command("list")
