@@ -58,7 +58,8 @@ jobs:
           rm "$RUNNER_TEMP/age.key"
           uv run --no-sync python -c "from lens.ops.backup import ensure_drill_target as g; import os; g(os.environ['DRILL_DATABASE_URL'])"
           docker run --rm --network host -v "$PWD/in:/in" postgres:17-alpine \
-            pg_restore --no-owner --no-privileges --exit-on-error --dbname "$DRILL_DATABASE_URL" /in/lens.dump
+            pg_restore --no-owner --no-privileges --clean --if-exists --exit-on-error \
+            --dbname "$DRILL_DATABASE_URL" /in/lens.dump
       - name: Compare with the manifest
         run: uv run --no-sync lens ops verify-restore --manifest in/manifest.json
       - name: Record the result

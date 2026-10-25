@@ -206,7 +206,7 @@ When you merge a change that adds a migration, run the migrate workflow straight
 1. Download the `lens-backup` artifact from a successful **Nightly backup** run.
 2. Check it: `sha256sum -c SHA256SUMS`.
 3. Decrypt it: `age -d -i lens-backup.key -o lens.dump lens.dump.age`.
-4. Restore it into a new Supabase project with `pg_restore --no-owner --no-privileges --dbname "<session pooler URL>" lens.dump`.
+4. Create the `lens_app` role in the new project (step 3), then restore as `postgres` with `pg_restore --no-owner --no-privileges --dbname "<session pooler URL>" lens.dump`. It reports one ignored error, `schema "public" already exists`. That is expected: the backup holds only the `public` schema, which every new project already has.
 5. Point the secrets at the new project and run `lens doctor`.
 
 ### Rotate a secret

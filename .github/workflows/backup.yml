@@ -44,7 +44,8 @@ jobs:
           uv run --no-sync lens ops with-pg-env -- docker run --rm --network host \
             -e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE -e PGSSLMODE \
             -v "$PWD/staging:/out" postgres:17-alpine \
-            pg_dump --format=custom --no-owner --no-privileges --file=/out/lens.dump.partial
+            pg_dump --format=custom --no-owner --no-privileges --schema=public \
+            --file=/out/lens.dump.partial
           mv staging/lens.dump.partial staging/lens.dump
           age -r "$AGE_RECIPIENT" -o staging/lens.dump.age staging/lens.dump
           rm staging/lens.dump
