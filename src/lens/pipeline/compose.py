@@ -12,6 +12,7 @@ from lens.domain.briefing import (
     DataAsOf,
     DataIssue,
     HoldingLine,
+    LevelAlertLine,
     MarketContext,
     Mode,
     NarrativeSection,
@@ -225,6 +226,17 @@ def compose(inputs: CycleInputs, analysis: Analysis) -> BriefingDocument:
         narrative=narrative,
         strategy_versions={s.name: s.version for s in analysis.strategies if s.enabled},
         week=_week(inputs, analysis),
+        level_alerts=tuple(
+            LevelAlertLine(
+                symbol=hit.alert.symbol,
+                currency=analysis.assets[hit.alert.symbol].asset.currency,
+                direction=hit.alert.direction,
+                level=hit.alert.level,
+                day=hit.day,
+                close=hit.close,
+            )
+            for hit in analysis.alert_hits
+        ),
     )
 
 

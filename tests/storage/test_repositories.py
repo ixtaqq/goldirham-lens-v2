@@ -7,12 +7,14 @@ from decimal import Decimal
 
 import pytest
 
+from lens.domain.alerts import Direction
 from lens.domain.instruments import AssetClass, Instrument
 from lens.domain.portfolio import FxRate, TxKind
 from lens.settings import OwnerSettings
 from lens.storage.cycles import STALE_SENDING, ClaimOutcome, CycleRepo, DeliveryState
 from lens.storage.db import Database
 from lens.storage.ledger import LedgerRepo
+from lens.storage.levels import LevelAlertRepo
 from lens.storage.market import MarketRepo
 from lens.storage.ops import OpsRepo
 from tests.helpers import make_bars
@@ -310,3 +312,28 @@ async def test_ledger_round_trip(db: Database) -> None:
     assert [(t.symbol, t.kind, t.quantity, t.price) for t in txs] == [
         ("AAPL", TxKind.BUY, Decimal(10), Decimal("101.5"))
     ]
+
+
+async def test_level_alerts_list_cancel_and_trigger_once(db: Database) -> None:
+    await _owner(db)
+    async with db.session() as s:
+        ids = await MarketRepo(s).ensure_instruments([AAPL])
+        repo = LevelAlertRepo(s)
+        first = await repo.add(OWNER, ids["AAPL"], Direction.ABOVE, Decimal("200"), DAY)
+        second = await repo.add(OWNER, ids["AAPL"], Direction.BELOW, Decimal("150"), DAY)
+    async with db.session() as s:
+        repo = LevelAlertRepo(s)
+        assert [(a.id, a.symbol, a.direction) for a in await repo.active(OWNER)] == [
+            (first, "AAPL", Direction.ABOVE),
+            (second, "AAPL", Direction.BELOW),
+        ]
+        assert await repo.cancel(OWNER, second, NOW)
+        assert not await repo.cancel(OWNER, second, NOW)
+        assert not await repo.cancel(OWNER + 1, first, NOW)
+        assert await repo.mark_triggered(first, DAY, Decimal("201.5"))
+        assert not await repo.mark_triggered(first, DAY, Decimal("202"))
+    async with db.session() as s:
+        repo = LevelAlertRepo(s)
+        assert await repo.active(OWNER) == []
+        (done,) = await repo.recent(OWNER)
+        assert (done.id, done.triggered_on, done.triggered_close) == (first, DAY, Decimal("201.5"))

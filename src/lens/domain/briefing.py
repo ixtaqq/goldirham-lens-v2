@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from lens.domain.alerts import Direction
 from lens.domain.bars import BarQuality
 from lens.domain.evaluation import EventKind
 from lens.domain.holdings import MarkStatus, ReviewAction
@@ -159,9 +160,18 @@ class WeekSection(_Doc):
     decliners: tuple[WeekLine, ...]
 
 
+class LevelAlertLine(_Doc):
+    symbol: str
+    currency: str
+    direction: Direction
+    level: Decimal
+    day: date
+    close: Decimal
+
+
 # Sections added after launch. Left out of the stored form when empty, so briefings stored
 # before them replay identically.
-LATER_SECTIONS = ("week",)
+LATER_SECTIONS = ("week", "level_alerts")
 
 
 class BriefingDocument(_Doc):
@@ -185,6 +195,7 @@ class BriefingDocument(_Doc):
     strategy_versions: dict[str, str]
     disclaimer: str = DISCLAIMER
     week: WeekSection | None = None
+    level_alerts: tuple[LevelAlertLine, ...] = ()
 
     def stored(self) -> dict[str, Any]:
         empty = {name for name in LATER_SECTIONS if not getattr(self, name)}

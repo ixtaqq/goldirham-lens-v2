@@ -18,7 +18,7 @@ from lens.data.providers.base import CallLog, ProviderError
 from lens.delivery.sender import deliver
 from lens.delivery.telegram import TelegramAmbiguousError, TelegramDefiniteError
 from lens.domain.briefing import Headline
-from lens.domain.instruments import Instrument
+from lens.domain.instruments import AssetClass, Instrument
 from lens.domain.portfolio import FxRate
 from lens.pipeline import cycle as cycle_module
 from lens.pipeline.cycle import CycleDeps, Outcome, run_cycle
@@ -492,3 +492,41 @@ async def test_live_strategy_opens_a_signal_and_evaluates_it_the_next_day(
     assert stopped.outcome_r <= -1
     # The rules allow a fresh setup after a stop when trend and trigger still pass; nothing blocks re-entry.
     assert records[crash_day].status.value == "OPEN"
+
+
+async def test_a_level_alert_fires_in_one_briefing_and_never_again(
+    db: Database, migrated_url: str, tmp_path: Path
+) -> None:
+    from lens.domain.alerts import Direction
+    from lens.storage.levels import LevelAlertRepo
+    from lens.storage.market import MarketRepo
+
+    spy = Instrument.create("SPY", AssetClass.ETF, "SPDR S&P 500 ETF")
+    async with db.session() as session:
+        await MarketRepo(session).ensure_owner(OWNER, "MYR", "Asia/Kuala_Lumpur")
+        ids = await MarketRepo(session).ensure_instruments([spy])
+        await LevelAlertRepo(session).add(
+            OWNER, ids["SPY"], Direction.ABOVE, Decimal("600"), NOW.date().replace(month=1, day=2)
+        )
+
+    first = await run_cycle(
+        load_settings(),
+        _secrets(migrated_url),
+        trigger="schedule_1",
+        deps=_deps(migrated_url, FakeTelegram(), tmp_path),
+    )
+    tomorrow = NOW + timedelta(days=1)
+    second = await run_cycle(
+        load_settings(),
+        _secrets(migrated_url),
+        trigger="schedule_1",
+        deps=replace(_deps(migrated_url, FakeTelegram(), tmp_path), clock=lambda: tomorrow),
+    )
+
+    assert "<b>Price alerts</b>\n• SPY closed at USD " in "\n".join(first.chunks)
+    assert "Price alerts" not in "\n".join(second.chunks)
+    async with db.session() as session:
+        assert await LevelAlertRepo(session).active(OWNER) == []
+        (done,) = await LevelAlertRepo(session).recent(OWNER)
+    assert done.triggered_close is not None
+    assert done.triggered_close >= Decimal("600")

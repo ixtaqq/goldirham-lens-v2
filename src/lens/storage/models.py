@@ -410,6 +410,23 @@ class AlertRow(Base):
     )
 
 
+class LevelAlertRow(Base):
+    """A price level the owner set. It fires once, on the first completed close that crosses it."""
+
+    __tablename__ = "level_alerts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("owners.id", ondelete="CASCADE"))
+    instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
+    direction: Mapped[str] = mapped_column(String(5))
+    level: Mapped[Decimal]
+    created_on: Mapped[date] = mapped_column(Date)
+    created_at: Mapped[datetime] = _now()
+    triggered_on: Mapped[date | None] = mapped_column(Date)
+    triggered_close: Mapped[Decimal | None]
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (CheckConstraint("direction IN ('above','below')", name="direction"),)
+
+
 class AiUsage(Base):
     __tablename__ = "ai_usage"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

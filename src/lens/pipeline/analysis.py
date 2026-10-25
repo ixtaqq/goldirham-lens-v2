@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from decimal import Decimal
 
+from lens.domain.alerts import AlertHit, first_crossing
 from lens.domain.bars import Bar
 from lens.domain.briefing import BenchmarkLine, Regime
 from lens.domain.evaluation import Event, SignalState, advance
@@ -76,6 +77,7 @@ class Analysis:
     benchmarks: tuple[BenchmarkLine, ...]
     breadth_pct: Decimal | None
     regime: Regime
+    alert_hits: tuple[AlertHit, ...] = ()
 
 
 def _usable(bars: tuple[Bar, ...]) -> list[Bar]:
@@ -302,6 +304,11 @@ def analyze(inputs: CycleInputs) -> Analysis:
         else:
             regime = "neutral"
 
+    hits = (
+        first_crossing(a.alert(), assets[a.symbol].bars)
+        for a in inputs.level_alerts
+        if a.symbol in assets
+    )
     return Analysis(
         settings=settings,
         strategies=strategies,
@@ -315,6 +322,7 @@ def analyze(inputs: CycleInputs) -> Analysis:
         benchmarks=tuple(benchmarks),
         breadth_pct=breadth,
         regime=regime,
+        alert_hits=tuple(h for h in hits if h is not None),
     )
 
 

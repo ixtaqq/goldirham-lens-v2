@@ -11,8 +11,9 @@ import pytest
 
 import lens.bot.commands  # noqa: F401
 from lens.bot import router
-from lens.bot.commands import briefings, ledger, settings_commands, status
+from lens.bot.commands import briefings, ledger, levels, settings_commands, status
 from lens.delivery.sender import DeliveryResult
+from lens.domain.alerts import Direction
 from lens.domain.evaluation import SignalStatus
 from lens.domain.instruments import AssetClass, Instrument
 from lens.domain.portfolio import FxRate, Transaction, TxKind
@@ -617,3 +618,74 @@ async def test_run_dispatches_only_when_configured() -> None:
     dispatcher = FakeDispatcher()
     assert "Started." in await say(context(dispatcher=dispatcher), "/run")
     assert dispatcher.dispatched == [("daily.yml", {"trigger": "dispatch"})]
+
+
+# ------------------------------------------------------------------ price levels
+
+
+def _level(id_: int, direction: str, level: str, **extra: Any) -> SimpleNamespace:
+    values = {
+        "id": id_,
+        "symbol": "AAPL",
+        "direction": Direction(direction),
+        "level": Decimal(level),
+        "created_on": date(2026, 10, 10),
+        "triggered_on": None,
+        "triggered_close": None,
+    }
+    return SimpleNamespace(**(values | extra))
+
+
+async def test_level_sets_an_alert_on_a_known_symbol(monkeypatch: pytest.MonkeyPatch) -> None:
+    alerts = Repo(add=9)
+    monkeypatch.setattr(levels, "LevelAlertRepo", alerts)
+    monkeypatch.setattr(levels, "MarketRepo", Repo(instrument_ids={"AAPL": 5}, instrument=AAPL))
+    ctx = context(now=NOW.replace(hour=23, minute=30) - timedelta(days=1))  # 07:30 MYT
+
+    text = await say(ctx, "/level aapl above 200")
+
+    assert "Alert 9 set: AAPL closing above USD 200.00." in text
+    assert alerts.called("add") == [
+        ((42, 5, Direction.ABOVE, Decimal("200"), date(2026, 10, 16)), {})
+    ]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("/level aapl sideways 200", "Usage: /level TICKER above|below PRICE"),
+        ("/level aapl above lots", "price must be a number"),
+        ("/level aapl below 0", "price must be positive"),
+        ("/level tsla above 300", "TSLA is not known yet. Add it with /watchlist add TSLA first."),
+    ],
+)
+async def test_level_explains_bad_input(
+    monkeypatch: pytest.MonkeyPatch, text: str, expected: str
+) -> None:
+    alerts = Repo(add=9)
+    monkeypatch.setattr(levels, "LevelAlertRepo", alerts)
+    monkeypatch.setattr(levels, "MarketRepo", Repo(instrument_ids={"AAPL": 5}, instrument=None))
+    assert expected in await say(context(), text)
+    assert alerts.called("add") == []
+
+
+async def test_level_lists_active_and_recent_and_removes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(levels, "LevelAlertRepo", Repo(active=[], recent=[]))
+    assert "No price alerts." in await say(context(), "/level")
+
+    fired = _level(
+        3, "below", "150", triggered_on=date(2026, 10, 14), triggered_close=Decimal("149.2")
+    )
+    monkeypatch.setattr(
+        levels,
+        "LevelAlertRepo",
+        Repo(active=[_level(9, "above", "200")], recent=[fired], cancel=lambda o, i, n: i == 9),
+    )
+    monkeypatch.setattr(levels, "MarketRepo", Repo(instrument=AAPL))
+    ctx = context()
+    listing = await say(ctx, "/level")
+    assert "• 9 AAPL above USD 200.00 · set 10 Oct" in listing
+    assert "• 3 AAPL below USD 150.00 · closed at USD 149.20 on 14 Oct" in listing
+    assert "Removed alert 9." in await say(ctx, "/level remove 9")
+    assert "No active alert 4." in await say(ctx, "/level remove 4")
+    assert "Usage: /level remove ID" in await say(ctx, "/level remove x")

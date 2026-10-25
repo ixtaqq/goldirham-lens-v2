@@ -11,6 +11,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from lens.domain.alerts import Direction, LevelAlert
 from lens.domain.bars import Bar, BarQuality
 from lens.domain.briefing import Headline
 from lens.domain.evaluation import Levels, SignalState, SignalStatus
@@ -182,6 +183,17 @@ class ContextIn(_In):
     headlines: tuple[Headline, ...] = ()
 
 
+class LevelAlertIn(_In):
+    id: int
+    symbol: str
+    direction: Direction
+    level: Decimal
+    created_on: date
+
+    def alert(self) -> LevelAlert:
+        return LevelAlert(self.id, self.symbol, self.direction, self.level, self.created_on)
+
+
 class NarrativeIn(_In):
     paragraphs: tuple[str, ...]
     model: str
@@ -212,6 +224,7 @@ class CycleInputs(_In):
     context: ContextIn
     sources_unavailable: tuple[str, ...]
     narrative: NarrativeIn | None = None
+    level_alerts: tuple[LevelAlertIn, ...] = ()
 
     def asset(self, symbol: str) -> AssetIn | None:
         return next((a for a in self.assets if a.symbol == symbol), None)

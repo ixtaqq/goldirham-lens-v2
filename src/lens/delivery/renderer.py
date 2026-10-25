@@ -224,6 +224,18 @@ def _market(doc: BriefingDocument) -> str:
     return "\n".join(lines)
 
 
+def _level_alerts(doc: BriefingDocument) -> str | None:
+    if not doc.level_alerts:
+        return None
+    lines = ["<b>Price alerts</b>"]
+    lines += [
+        f"• {esc(a.symbol)} closed at {price(a.close, a.currency)} on {short_day(a.day)}, "
+        f"{a.direction.value} your {price(a.level, a.currency)} level. This alert is now done."
+        for a in doc.level_alerts
+    ]
+    return "\n".join(lines)
+
+
 def _week(doc: BriefingDocument) -> str | None:
     week = doc.week
     if week is None:
@@ -277,6 +289,7 @@ def render_sections(doc: BriefingDocument) -> list[str]:
         _data_status(doc),
         _portfolio(doc),
         _changes(doc),
+        _level_alerts(doc),
         _setups(doc),
         _signals(doc),
         _market(doc),
