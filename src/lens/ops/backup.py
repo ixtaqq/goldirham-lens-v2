@@ -44,7 +44,7 @@ def ensure_drill_target(url: str) -> None:
 
 def libpq_environment(url: str) -> dict[str, str]:
     """PG* variables for libpq tools, so a connection string never appears on a command line."""
-    parts = urlsplit(url)
+    parts = urlsplit(url.strip())
     env = {
         "PGHOST": parts.hostname or "",
         "PGPORT": str(parts.port or 5432),

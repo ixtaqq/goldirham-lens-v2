@@ -16,7 +16,7 @@ from lens.ops.backup import (
     libpq_environment,
     manifest,
 )
-from lens.storage.db import Database
+from lens.storage.db import Database, normalize_url
 from tests.conftest import _ensure_database
 
 NOW = datetime(2026, 10, 16, 3, 0, tzinfo=UTC)
@@ -154,3 +154,19 @@ def test_recording_an_event_before_the_first_migration_is_a_stated_no_op(
             await db.dispose()
 
     assert "backup_ok" in asyncio.run(kinds())
+
+
+def test_a_pasted_line_break_around_a_database_url_is_ignored() -> None:
+    """A secret pasted with its trailing newline asked Postgres for database 'postgres\n'."""
+    pasted = (
+        "postgresql://postgres.ref:pw@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres\r\n"
+    )
+    assert normalize_url(pasted) == (
+        "postgresql+asyncpg://postgres.ref:pw@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+    )
+    assert normalize_url(" \n" + pasted).startswith("postgresql+asyncpg://")
+    env = libpq_environment(pasted)
+    assert (env["PGHOST"], env["PGDATABASE"]) == (
+        "aws-0-ap-southeast-1.pooler.supabase.com",
+        "postgres",
+    )

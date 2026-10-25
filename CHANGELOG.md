@@ -9,6 +9,7 @@ All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet
 - The backup before a migration could never succeed when the migration added tables, including the first migration on an empty database. Its manifest read every table the code knows, and the new ones did not exist yet, so the backup failed and the migration never ran. The manifest now covers only the tables that exist, and records no revision when `alembic_version` is missing.
 - The backup dumps only the `public` schema. A full dump as `lens_app` failed on Supabase's own `auth`, `storage` and `realtime` schemas, which that role cannot read and a plain Postgres could not restore. A table pattern would have failed on an empty database, so it is `--schema=public`, and the restore drill restores with `--clean --if-exists` to replace the empty schema in its throwaway database.
 - `lens ops record`, which the backup runs last, failed before the first migration because `operational_events` did not exist yet. It now says so and records nothing. The whole backup-then-migrate sequence was rehearsed locally on an empty database with an app role holding the runbook's grants.
+- A database URL secret pasted with its trailing line break made the migration ask for database `postgres` plus a newline. Database URLs are now stripped of surrounding whitespace before use, in the app, migrations and the backup's `PG*` variables.
 
 ### Changed
 
