@@ -83,6 +83,13 @@ class ScorecardSettings(_Model):
     exit_model: Literal["full_to_t2", "half_at_t1_breakeven"] = "full_to_t2"
 
 
+class DigestSettings(_Model):
+    # Off unless settings.yaml turns it on, so inputs stored before the digest replay unchanged.
+    enabled: bool = False
+    weekday: int = Field(6, ge=0, le=6)
+    movers: int = Field(3, ge=1, le=10)
+
+
 class NarrativeSettings(_Model):
     enabled: bool = False
     model: str = "claude-opus-5-5"
@@ -133,6 +140,7 @@ class Settings(_Model):
     holdings: HoldingsSettings = HoldingsSettings()
     alerts: AlertsSettings = AlertsSettings()
     scorecard: ScorecardSettings = ScorecardSettings()
+    digest: DigestSettings = DigestSettings()
     narrative: NarrativeSettings = NarrativeSettings()
     context: ContextSettings = ContextSettings()
     watchlist: tuple[WatchlistItem, ...]

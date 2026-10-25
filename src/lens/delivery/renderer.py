@@ -16,7 +16,7 @@ from lens.delivery.format import (
     short_day,
     signed_pct,
 )
-from lens.domain.briefing import BriefingDocument, ChangeKind, Mode
+from lens.domain.briefing import BriefingDocument, ChangeKind, Mode, WeekLine
 from lens.domain.evaluation import EventKind
 from lens.domain.holdings import MarkStatus
 from lens.domain.reasons import LABELS, ReasonCode
@@ -224,6 +224,38 @@ def _market(doc: BriefingDocument) -> str:
     return "\n".join(lines)
 
 
+def _week(doc: BriefingDocument) -> str | None:
+    week = doc.week
+    if week is None:
+        return None
+    every = (*week.benchmarks, *week.holdings, *week.gainers, *week.decliners)
+    if not every:
+        return None
+    start, end = min(w.from_day for w in every), max(w.to_day for w in every)
+
+    def line(label: str, items: tuple[WeekLine, ...]) -> str | None:
+        if not items:
+            return None
+        return f"{label}: " + " · ".join(
+            f"{esc(w.symbol)} {signed_pct(w.change_pct)}"
+            + (
+                ""
+                if (w.from_day, w.to_day) == (start, end)
+                else f" ({short_day(w.from_day)} to {short_day(w.to_day)})"
+            )
+            for w in items
+        )
+
+    rows = [
+        line("Benchmarks", week.benchmarks),
+        line("Holdings", week.holdings),
+        line("Up most", week.gainers),
+        line("Down most", week.decliners),
+    ]
+    header = f"<b>This week</b> · {short_day(start)} to {short_day(end)}"
+    return "\n".join([header, *(r for r in rows if r)])
+
+
 def _narrative(doc: BriefingDocument) -> str | None:
     if doc.narrative is None:
         return None
@@ -248,6 +280,7 @@ def render_sections(doc: BriefingDocument) -> list[str]:
         _setups(doc),
         _signals(doc),
         _market(doc),
+        _week(doc),
         _narrative(doc),
         _footer(doc),
     ]

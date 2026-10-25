@@ -87,6 +87,12 @@ scorecard:
   min_sample: 20
   exit_model: full_to_t2
 
+# A "This week" section in one briefing a week. weekday: 0 is Monday, 6 is Sunday.
+digest:
+  enabled: true
+  weekday: 6
+  movers: 3
+
 narrative:
   enabled: false
   model: claude-opus-5-5

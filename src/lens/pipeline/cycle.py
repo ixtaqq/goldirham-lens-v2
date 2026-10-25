@@ -162,7 +162,7 @@ async def _narrate(
 
 def render(inputs: CycleInputs, limit: int = TELEGRAM_LIMIT) -> tuple[list[str], dict[str, object]]:
     document = compose(inputs, analyze(inputs))
-    return chunk(render_sections(document), limit), document.model_dump(mode="json")
+    return chunk(render_sections(document), limit), document.stored()
 
 
 async def run_cycle(

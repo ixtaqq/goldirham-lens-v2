@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from lens.domain.bars import Bar
@@ -29,6 +29,14 @@ from lens.pipeline.inputs import AssetIn, CycleInputs, SignalIn
 from lens.settings import Settings
 
 MAX_SETUPS = 3
+WEEK = timedelta(days=7)
+
+
+@dataclass(frozen=True, slots=True)
+class WeekMove:
+    from_bar: Bar
+    to_bar: Bar
+    change_pct: Decimal
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +48,7 @@ class AssetAnalysis:
     latest: Bar | None
     change_pct: Decimal | None
     above_ma200: bool | None
+    week: WeekMove | None = None
 
     @property
     def ready(self) -> bool:
@@ -77,6 +86,18 @@ def _change_pct(usable: list[Bar]) -> Decimal | None:
     if len(usable) < 2 or usable[-2].close <= 0:
         return None
     return ((usable[-1].close / usable[-2].close - 1) * HUNDRED).quantize(Decimal("0.01"))
+
+
+def _week_move(usable: list[Bar]) -> WeekMove | None:
+    """From the last usable close at least a week before the latest one, to the latest."""
+    if not usable:
+        return None
+    latest = usable[-1]
+    anchor = next((b for b in reversed(usable) if b.day <= latest.day - WEEK), None)
+    if anchor is None or anchor.close <= 0:
+        return None
+    change = ((latest.close / anchor.close - 1) * HUNDRED).quantize(Decimal("0.01"))
+    return WeekMove(anchor, latest, change)
 
 
 def _mark(asset: AssetIn, bars: tuple[Bar, ...]) -> Mark:
@@ -150,6 +171,7 @@ def _analyze_asset(
         usable[-1] if usable else None,
         _change_pct(usable),
         above,
+        _week_move(usable),
     )
 
 
