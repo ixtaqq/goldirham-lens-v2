@@ -25,6 +25,7 @@ NUMBER_WORDS = frozenset(
         "eight",
         "nine",
         "ten",
+        "tens",
         "eleven",
         "twelve",
         "thirteen",
@@ -43,13 +44,19 @@ NUMBER_WORDS = frozenset(
         "eighty",
         "ninety",
         "hundred",
+        "hundreds",
         "thousand",
+        "thousands",
         "million",
+        "millions",
         "billion",
+        "billions",
         "trillion",
+        "trillions",
         "percent",
         "percentage",
         "half",
+        "halves",
         "halved",
         "double",
         "doubled",
@@ -61,6 +68,7 @@ NUMBER_WORDS = frozenset(
         "third",
         "thirds",
         "dozen",
+        "dozens",
     }
 )
 CURRENCY = re.compile(r"[$€£¥₹]|\b(?:usd|myr|rm|us\$|usdt|eur|gbp|sgd)\b", re.IGNORECASE)
@@ -131,13 +139,12 @@ def _check(
     stripped = PLACEHOLDER.sub(" ", text)
     for word in allowed_words:
         stripped = stripped.replace(word, " ")
-    if re.search(r"\d", stripped) or "%" in stripped or CURRENCY.search(stripped):
+    if re.search(r"[\d%％‰]", stripped) or CURRENCY.search(stripped):
         raise VerificationError(Rejection.UNGROUNDED_NUMBER, text[:60])
     words = set(re.findall(r"[a-z]+", stripped.lower()))
-    if words & NUMBER_WORDS:
-        raise VerificationError(
-            Rejection.UNGROUNDED_NUMBER, ", ".join(sorted(words & NUMBER_WORDS))
-        )
+    numeric = {w for w in words if w in NUMBER_WORDS or w.removesuffix("fold") in NUMBER_WORDS}
+    if numeric:
+        raise VerificationError(Rejection.UNGROUNDED_NUMBER, ", ".join(sorted(numeric)))
     return PLACEHOLDER.sub(substitute, text).strip()
 
 

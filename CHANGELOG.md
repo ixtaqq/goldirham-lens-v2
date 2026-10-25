@@ -2,6 +2,15 @@
 
 All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet.
 
+## Unreleased: review fixes (2026-10-25)
+
+### Fixed
+
+- A degraded briefing that failed part way, or timed out on its first message, returned `failed` without the once-a-day marker, so the 07:40 trigger sent it again. Anything that may have reached the owner now counts as sent. Only a definite failure before the first message lets the next trigger retry.
+- `/buy`, `/sell` and the other ledger commands dated trades by the UTC day. Before 08:00 MYT a trade without a date was recorded on the previous day, and a trade dated today was refused. They now use the owner's calendar day, and so does `/portfolio`.
+- A held position that was also a benchmark and not on the watchlist was collected twice each run, which spent provider quota. Each symbol is now collected once. Analysis already kept one entry per symbol, so the rendered briefing does not change.
+- The narrative verifier now also rejects plural and "-fold" number words (hundreds, millions, tenfold) and the per-mille and fullwidth percent signs.
+
 ## Unreleased: optional pieces (2026-10-17)
 
 ### Added

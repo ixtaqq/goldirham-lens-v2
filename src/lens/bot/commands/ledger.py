@@ -115,7 +115,7 @@ def _describe(payload: dict[str, Any], currency: str) -> str:
 
 async def _propose(ctx: BotContext, kind: TxKind, args: list[str]) -> Reply:
     try:
-        payload = parse_transaction(kind, args, ctx.now.date())
+        payload = parse_transaction(kind, args, ctx.settings.owner.today(ctx.now))
         async with ctx.db.session() as session:
             market = MarketRepo(session)
             instrument = await market.instrument(payload["symbol"]) or _guess_instrument(
@@ -192,6 +192,7 @@ for _kind in TX_USAGE:
 @command("portfolio", "/portfolio", "Holdings with dated marks, MYR totals and exposure")
 async def portfolio(ctx: BotContext, args: list[str]) -> Reply:
     base = ctx.settings.owner.base_currency
+    today = ctx.settings.owner.today(ctx.now)
     async with ctx.db.session() as session:
         transactions = await LedgerRepo(session).transactions(ctx.owner_id)
         positions = {s: p for s, p in build_positions(transactions).items() if p.quantity > 0}
@@ -199,10 +200,10 @@ async def portfolio(ctx: BotContext, args: list[str]) -> Reply:
             return Reply.text("No open positions. Record one with /buy.")
         market = MarketRepo(session)
         instruments = await market.instruments_by_symbol(positions)
-        bars = await market.load_bars(positions, since=ctx.now.date() - timedelta(days=30))
+        bars = await market.load_bars(positions, since=today - timedelta(days=30))
         fx: dict[str, FxRate] = {}
         for currency in {p.currency for p in positions.values()} - {base}:
-            rate = await market.latest_fx(currency, base, ctx.now.date())
+            rate = await market.latest_fx(currency, base, today)
             if rate is not None:
                 fx[currency] = rate
     marks: dict[str, Mark] = {}
@@ -212,7 +213,7 @@ async def portfolio(ctx: BotContext, args: list[str]) -> Reply:
             marks[symbol] = Mark(None, None, None, MarkStatus.UNAVAILABLE)
             continue
         last = usable[-1]
-        status = MarkStatus.STALE if ctx.now.date() - last.day > STALE_AFTER else MarkStatus.FRESH
+        status = MarkStatus.STALE if today - last.day > STALE_AFTER else MarkStatus.FRESH
         marks[symbol] = Mark(last.close, last.day, last.provider, status)
     snapshot = value_portfolio(
         positions,
