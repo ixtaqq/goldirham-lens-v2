@@ -23,7 +23,7 @@ jobs:
     needs: backup-first
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # The owner is the required reviewer on this environment, so every migration waits for approval.
+    # Where the plan allows, the owner is this environment's required reviewer, so migrations wait for approval.
     environment: production
     env:
       DATABASE_URL_DIRECT: ${{ secrets.DATABASE_URL_MIGRATOR }}

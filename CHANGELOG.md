@@ -2,6 +2,16 @@
 
 All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet.
 
+## Unreleased: first deploy (2026-10-25)
+
+### Fixed
+
+- The backup before a migration could never succeed when the migration added tables, including the first migration on an empty database. Its manifest read every table the code knows, and the new ones did not exist yet, so the backup failed and the migration never ran. The manifest now covers only the tables that exist, and records no revision when `alembic_version` is missing.
+
+### Changed
+
+- The runbook no longer promises an approval step for migrations. GitHub's free plan has no required reviewers for environments in private repositories. A migration still needs `migrate` typed in, runs only from `main`, and backs up first.
+
 ## Unreleased: roadmap (2026-10-25)
 
 ### Added

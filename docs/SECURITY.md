@@ -7,7 +7,7 @@
 | Bot commands | The owner, in a private chat with the bot | `bot/updates.py` `is_owner_private` checks user id, chat type and chat id before any handler runs. A test sends every registered command from four kinds of stranger and asserts no reply and no database access. |
 | Webhook endpoint | Telegram | `webhook.py` compares the `X-Telegram-Bot-Api-Secret-Token` header with `TELEGRAM_WEBHOOK_SECRET` using `hmac.compare_digest` and returns 401 before parsing the body. |
 | One-tap confirmations | The owner, once | A random 16-character token in `pending_actions`, consumed by a single `UPDATE ... WHERE consumed_at IS NULL AND expires_at > now()`. It expires after 15 minutes. |
-| Production schema changes | The owner, by approval | Only `migrate.yml` runs migrations, behind the `production` environment's required reviewer. |
+| Production schema changes | The owner, by starting the workflow | Only `migrate.yml` runs migrations: by hand, with `migrate` typed in, from `main`, after a backup, and behind the `production` environment's required reviewer where the GitHub plan allows one. |
 | Private dashboard | The owner, after Telegram sign-in | `dashboard/auth.py` checks Telegram's HMAC-SHA256 signature (keyed by SHA-256 of the bot token), requires the owner's id and a signature under 10 minutes old, then sets an HttpOnly, SameSite=Lax cookie signed with `DASHBOARD_SESSION_SECRET` for 12 hours. Every other page redirects to sign-in, and a test walks every route with no cookie, a forged cookie and another user's cookie. |
 | Restore drills | The job-local database | `ops/backup.py` `ensure_drill_target` refuses any host other than localhost, any database other than `lens_drill` after percent-decoding, and URL parameters that redirect the connection. |
 
