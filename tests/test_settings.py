@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -18,6 +19,13 @@ def test_shipped_settings_load_and_cover_every_market() -> None:
     assert markets == {Market.XNYS, Market.XKLS, Market.CRYPTO_UTC}
     assert settings.tick_rule(Market.XKLS).nearest(Decimal("9.876")) == Decimal("9.88")
     assert settings.providers.for_instrument(settings.instruments()[3]).primary == "binance"
+
+
+def test_owner_today_is_the_owner_calendar_day_not_utc() -> None:
+    owner = load_settings().owner
+
+    assert owner.today(datetime(2026, 10, 24, 23, 30, tzinfo=UTC)) == date(2026, 10, 25)
+    assert owner.today(datetime(2026, 10, 25, 15, 59, tzinfo=UTC)) == date(2026, 10, 25)
 
 
 def _write(tmp_path: Path, mutate: object) -> Path:

@@ -46,11 +46,15 @@ A delivery moves through these states:
 ```
 COMPOSED -> SENDING -> SENT
                     -> HELD    a timeout or network error after a chunk may have arrived
+                    -> HELD    the sender died mid-send and nothing touched it for 10 minutes
+                    -> HELD    the send deadline passed before every chunk was sent
                     -> FAILED  Telegram certainly accepted nothing; the next trigger retries
 HELD -> RESENT (the owner taps Resend in /held) or DISMISSED
 ```
 
 Each chunk's Telegram message id is written as soon as Telegram accepts it. A resend sends only the chunks without an id. A delivered briefing is never replaced, even if a later run composes a new one.
+
+A run killed mid-send, by the job timeout or by Vercel's 30-second limit during a resend, leaves its delivery in `SENDING`. The next trigger, or the owner's next `/held`, moves a `SENDING` delivery older than 10 minutes to `HELD` and clears its claim, so the dead sender can record nothing more. A resend from `/held` starts no new chunk after 6 seconds, which keeps it inside the Vercel limit; `tests/test_time_budgets.py` checks those numbers against `vercel.json`.
 
 ## When the database is unreachable
 

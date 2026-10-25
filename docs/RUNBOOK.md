@@ -177,7 +177,7 @@ python -m uv run lens doctor
 
 ### A briefing is held
 
-A timeout after some messages were sent leaves the briefing held, so you never get duplicates without choosing to. Send `/held`, read the preview, then tap **Resend remaining** or **Dismiss**.
+A timeout after some messages were sent leaves the briefing held, so you never get duplicates without choosing to. So does a run that stopped mid-send, once 10 minutes have passed. Send `/held`, read the preview, then tap **Resend remaining** or **Dismiss**. A long briefing may need more than one tap, because each resend stops after a few seconds to stay inside Vercel's time limit.
 
 ### An asset shows "a session inside the required window is missing"
 

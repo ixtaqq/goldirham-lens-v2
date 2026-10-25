@@ -172,3 +172,26 @@ async def test_held_briefing_review_and_resend(
     assert resent[-1][0].startswith("Resent ")
     assert len(resent) == len(result.chunks) - 1 + 1
     assert "Nothing is held" in await _say(db, "/held")
+
+
+async def test_a_briefing_whose_run_died_mid_send_shows_in_held_and_resends(
+    db: Database, migrated_url: str, tmp_path: Path
+) -> None:
+    crashing = FakeTelegram(fail_on={2: RuntimeError("runner killed")})
+    with pytest.raises(RuntimeError, match="runner killed"):
+        await run_cycle(
+            load_settings(),
+            _secrets(migrated_url),
+            trigger="schedule_1",
+            deps=_deps(migrated_url, crashing, tmp_path, chunk_limit=350),
+        )
+
+    messenger = FakeMessenger()
+    held = await _say(db, "/held", messenger)
+    assert "<b>Held briefing</b> 2026-10-16" in held
+    assert "1 of " in held
+    resend_token = messenger.sent[-1][1]["inline_keyboard"][0][0]["callback_data"]  # type: ignore[index]
+    ctx = BotContext(db, load_settings(), Secrets(_env_file=None), OWNER, NOW, None, messenger)  # type: ignore[call-arg]
+    await handle_update(callback(resend_token), ctx, messenger)
+    assert messenger.sent[-1][0].startswith("Resent ")
+    assert "Nothing is held" in await _say(db, "/held")

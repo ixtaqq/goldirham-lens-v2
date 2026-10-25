@@ -42,7 +42,9 @@ class TelegramClient:
         self, token: str, client: httpx.AsyncClient | None = None, timeout: float = 15.0
     ) -> None:
         self._base = f"{API}/bot{token}"
-        self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(timeout, connect=10.0))
+        self._client = client or httpx.AsyncClient(
+            timeout=httpx.Timeout(timeout, connect=min(timeout, 10.0))
+        )
         self._owns = client is None
 
     async def close(self) -> None:

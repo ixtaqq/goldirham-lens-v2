@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
@@ -81,6 +81,21 @@ def benchmark_instruments(settings: Settings) -> list[Instrument]:
             Instrument.create(symbol, asset_class, "FBM KLCI" if symbol == "^KLSE" else None)
         )
     return result
+
+
+def universe(
+    settings: Settings,
+    watched: Sequence[Instrument],
+    held: set[str],
+    known: Mapping[str, Instrument],
+) -> list[Instrument]:
+    """The watchlist, then benchmarks and held positions not on it, each symbol once."""
+    extra = [known.get(b.symbol, b) for b in benchmark_instruments(settings)]
+    extra += [known[s] for s in sorted(held) if s in known]
+    everything: dict[str, Instrument] = {}
+    for instrument in (*watched, *extra):
+        everything.setdefault(instrument.symbol, instrument)
+    return list(everything.values())
 
 
 def _asset_in(data: AssetData, watched: bool) -> AssetIn:
@@ -195,13 +210,7 @@ async def gather(
         active = await strategies.active_versions()
         prefs = await OpsRepo(session).preferences(owner_id)
         watched_symbols = {i.symbol for i in watched}
-        extra = [
-            known.get(b.symbol, b)
-            for b in benchmark_instruments(settings)
-            if b.symbol not in watched_symbols
-        ]
-        extra += [known[s] for s in sorted(held - watched_symbols) if s in known]
-        everything = [*watched, *[e for e in extra if e.symbol not in watched_symbols]]
+        everything = universe(settings, watched, held, known)
         stored = await market.load_bars(
             [i.symbol for i in everything], since=briefing_date - STORED_HISTORY
         )

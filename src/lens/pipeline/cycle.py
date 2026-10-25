@@ -517,12 +517,17 @@ async def run_degraded(
     if dry_run:
         return CycleResult(Outcome.PREVIEW, briefing_date, chunks, reason)
     telegram = deps.telegram(secrets.require("telegram_bot_token"))
+    accepted = 0
     try:
         for text in chunks:
             await telegram.send_message(secrets.owner_id(), text)
+            accepted += 1
     except TelegramError as error:
-        await ping(healthcheck, "fail", body=f"degraded send failed: {type(error).__name__}")
-        return CycleResult(Outcome.FAILED, briefing_date, chunks, type(error).__name__)
+        if accepted == 0 and error.definite:
+            await ping(healthcheck, "fail", body=f"degraded send failed: {type(error).__name__}")
+            return CycleResult(Outcome.FAILED, briefing_date, chunks, type(error).__name__)
+        # Part of it may have reached the owner; the marker stops the next trigger resending it.
+        reason = f"{reason} Delivery stopped after {accepted} message(s) ({type(error).__name__})."
     finally:
         await telegram.close()
     deps.state_dir.mkdir(parents=True, exist_ok=True)

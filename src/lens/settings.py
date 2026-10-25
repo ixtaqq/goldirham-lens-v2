@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date, datetime, time
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
@@ -27,6 +28,9 @@ class OwnerSettings(_Model):
     delivery_deadline: time = time(8, 0)
     healthcheck_grace_minutes: int = Field(15, ge=0, le=180)
     detail: Literal["concise", "detailed"] = "concise"
+
+    def today(self, now: datetime) -> date:
+        return now.astimezone(ZoneInfo(self.timezone)).date()
 
 
 class RiskSettings(_Model):

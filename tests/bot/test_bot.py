@@ -180,6 +180,20 @@ async def test_buy_confirms_once_and_records_once(db: Database) -> None:
 
 
 @pytest.mark.db
+async def test_a_trade_before_eight_in_the_morning_is_dated_the_owner_day(db: Database) -> None:
+    async with db.session() as session:
+        await MarketRepo(session).ensure_owner(OWNER, "MYR", "Asia/Kuala_Lumpur")
+    early = datetime(2026, 10, 15, 23, 30, tzinfo=UTC)  # 07:30 MYT on 16 Oct
+    ctx = BotContext(db, load_settings(), Secrets(_env_file=None), OWNER, early)  # type: ignore[call-arg]
+    messenger = FakeMessenger()
+
+    await handle_update(message("/buy AAPL 10 150 1 2026-10-16"), ctx, messenger)
+    assert "Please confirm" in messenger.sent[-1][0]
+    await handle_update(message("/buy AAPL 10 150"), ctx, messenger)
+    assert "on 16 Oct 2026" in messenger.sent[-1][0]
+
+
+@pytest.mark.db
 async def test_overselling_is_refused_before_confirmation(db: Database) -> None:
     async with db.session() as session:
         await MarketRepo(session).ensure_owner(OWNER, "MYR", "Asia/Kuala_Lumpur")
