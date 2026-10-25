@@ -13,7 +13,12 @@ from sqlalchemy.ext.asyncio import (
 
 
 def normalize_url(url: str) -> str:
-    """Accept postgres:// and postgresql:// URLs from providers and use the asyncpg driver."""
+    """Accept postgres:// and postgresql:// URLs from providers and use the asyncpg driver.
+
+    Surrounding whitespace is dropped: a secret pasted with its line break otherwise names a
+    database "postgres\\n".
+    """
+    url = url.strip()
     for prefix in ("postgres://", "postgresql://"):
         if url.startswith(prefix):
             return "postgresql+asyncpg://" + url[len(prefix) :]
