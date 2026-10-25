@@ -38,6 +38,8 @@ $env:TEST_DATABASE_URL = "postgresql+asyncpg://lens:lens-local-only@127.0.0.1:55
 python -m uv run poe check
 ```
 
+Install the pre-commit hooks once (ruff and gitleaks) with `python -m uv run --with pre-commit pre-commit install`.
+
 `poe check` runs exactly what CI runs: format, lint, strict types, import contracts, the
 webhook requirements check, and the full test suite including PostgreSQL integration tests.
 

@@ -39,6 +39,8 @@ Every stage writes a `stage_runs` row with its timing and outcome, so `/health` 
 
 Analysis and composition read only `CycleInputs`, never the network or the database. That one rule buys three things. `lens replay` rebuilds any stored briefing from its packed inputs and compares it byte for byte. The backtest can call the same decision code without a database. Tests build inputs by hand and check the rendered text against golden files.
 
+New briefing sections keep old briefings replayable. A section added after launch has an empty default, and the stored document leaves it out while it is empty (`BriefingDocument.stored()`). A setting that turns one on, such as `digest`, is off unless settings.yaml says otherwise, because packed inputs from before it carry no such key.
+
 ## Delivery states
 
 A delivery moves through these states:
@@ -65,6 +67,7 @@ The runner has no disk that survives between runs. If the database does not answ
 ```text
 src/lens/
   domain/      pure rules: instruments, sessions, money and ticks, bars, indicators, validation,
+               close-based level alerts,
                readiness, strategies, risk, holding reviews, evaluation, scorecard, portfolio, facts,
                the BriefingDocument
   data/        provider adapters, calendars, the collector
@@ -73,7 +76,7 @@ src/lens/
   delivery/    renderer, chunker, Telegram client, delivery state machine
   bot/         update parsing, owner guard, router, commands
   narrative/   optional AI: schema, prompt, placeholder verifier, budgeted service
-  backtest/    replay engine and report
+  backtest/    replay engine, report, and walk-forward parameter research
   ops/         doctor, health pings, backup manifest and restore guard, alert jobs
   dashboard/   owner-only FastAPI pages: Telegram sign-in, read-only queries, server-rendered HTML
   webhook.py   FastAPI app for Telegram updates

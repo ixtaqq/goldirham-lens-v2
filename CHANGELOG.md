@@ -2,6 +2,24 @@
 
 All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet.
 
+## Unreleased: roadmap (2026-10-25)
+
+### Added
+
+- **Walk-forward research.** `lens research --sweep NAME=V1,V2` tries every combination of the swept parameters. Each of its folds chooses parameters on data up to the fold's start, seeing no later bar, and trades the next unseen window. All test windows together are compared with random entries on the same windows. The report says whether the choice beat the 95th percentile of random entries. It writes files only and changes no settings. The first run, over 12 candidates and three folds, did not beat random entries (`reports/research-pullback_in_uptrend-9f0d53f07469.md`), so no strategy is closer to activation.
+- **Weekly digest.** One briefing a week (Sunday by default, `digest` in settings.yaml) gains a "This week" section. It shows each benchmark's and holding's change over the week, and the watchlist's biggest gainers and decliners, each from its own completed closes.
+- **Price level alerts.** `/level AAPL above 200` sets an alert, `/level` lists them and `/level remove ID` cancels one. The first verified completed close after the day it was set that reaches the level is reported once in the briefing. The alert is then done. Migration `0002` adds the `level_alerts` table.
+- **Dashboard charts.** The portfolio page draws the stored total and the exposure by asset class over time as server-rendered SVG. Each point carries its own tooltip, every line its latest value, and the colours follow the asset class.
+- `lens ops with-pg-env -- COMMAND` runs a command with `PG*` variables taken from the database URL.
+- Unit tests for every bot command run without PostgreSQL, through fake repositories. Bot coverage without the database rose from 32% to 97%.
+
+### Changed
+
+- The backup passes the database connection to `pg_dump` through `PG*` variables, so the password is in no process's arguments.
+- `/health` judges on-time delivery against `owner.delivery_deadline` in the owner's timezone, not a fixed midnight UTC. The cycle uses the same helper.
+- A reply the webhook cannot send no longer answers Telegram with an error, so Telegram does not redeliver the update and run the command again.
+- Sections added to the briefing after launch (`week`, `level_alerts`) are left out of the stored document when empty, so briefings stored before them still replay byte for byte.
+
 ## Unreleased: review fixes (2026-10-25)
 
 ### Fixed

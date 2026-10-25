@@ -105,3 +105,17 @@ The scorecard covers signals from the last 365 days. With fewer than 20 resolved
 ## Backtest
 
 `lens backtest` replays history through the same `decide()` and `advance()` code. Its report states the execution assumptions, splits results into the whole period and the out-of-sample tail (the last 40% of the period), and compares against two baselines: random entries with the same stops and targets, and buy and hold. `lens strategy activate` refuses a version without a stored report. The first report for `pullback_in_uptrend` is in [ADR 0005](adr/0005-backtest-and-activation.md).
+
+## Research
+
+`lens research` sweeps a grid of parameter values with walk-forward testing. The last half of the period is split into equal test windows. Each fold trains on everything from the start of the period to the day before its test window, and sees no bar after that day, so a trade still open at the end of training cannot take its result from the future. Among candidates with at least `--min-trades` resolved training trades, the highest training expectancy wins, and it then trades the test window. The out-of-sample result is every test window together. It is compared with random entries using the chosen stops and targets on the same windows, with as many trades per asset.
+
+The verdict is "beats random" only when there are at least 20 resolved out-of-sample trades and their expectancy is above the 95th percentile of the random runs. With fewer trades the verdict is inconclusive. Every extra candidate raises the chance that one looks good by luck, so only the walk-forward result counts. Research never changes settings or activates anything.
+
+## Price level alerts
+
+An alert names a symbol, a direction (above or below) and a level. It fires on the first completed session after the day it was set whose close is verified and at or beyond the level. A close exactly at the level counts. Suspect, disputed or single-source closes are skipped, as everywhere else. A fired alert appears once in the next briefing with its session date and close, and is then done.
+
+## Weekly digest
+
+On the configured weekday, the briefing compares each asset's latest usable close with its last usable close at least seven days earlier. It shows benchmarks, holdings, and the largest gains and losses on the watchlist (three each by default). A line whose dates differ from the section's range shows its own dates.

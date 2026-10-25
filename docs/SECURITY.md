@@ -28,7 +28,7 @@
 
 - `lens.logs` redacts every configured secret value and known secret shapes (Telegram tokens, Anthropic keys, GitHub tokens, database passwords in URLs, Healthchecks URLs) from structured logs, stdlib logs and tracebacks.
 - An empty environment value counts as unset, so a missing GitHub secret reads as missing rather than as an empty password.
-- gitleaks runs in pre-commit and in CI.
+- gitleaks runs in CI, and in pre-commit once you install the hooks with `python -m uv run --with pre-commit pre-commit install`.
 
 ## Database roles
 
@@ -45,6 +45,7 @@
 - Third-party actions are pinned to commit SHAs.
 - No workflow uses `pull_request_target`. The daily briefing and holding alerts run only on `main`.
 - Cron runs of the five scheduled workflows skip unless the repository variable `SCHEDULES_ENABLED` is `true`.
+- The backup hands the database connection to `pg_dump` through `PG*` environment variables (`lens ops with-pg-env`), so the password appears in no process's arguments.
 
 ## Data that leaves the service
 
