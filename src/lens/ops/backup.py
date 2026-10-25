@@ -59,16 +59,32 @@ def libpq_environment(url: str) -> dict[str, str]:
 
 
 async def manifest(db: Database) -> dict[str, Any]:
+    """Row counts and checksums of the tables that exist.
+
+    The backup before a migration runs the new code against the old schema, and the first one
+    runs against an empty database, so tables the code knows but the database lacks are skipped.
+    """
     tables: dict[str, dict[str, Any]] = {}
     async with db.engine.connect() as connection:
+        present = set(
+            (
+                await connection.execute(
+                    text("SELECT tablename FROM pg_tables WHERE schemaname = current_schema()")
+                )
+            ).scalars()
+        )
         for table in Base.metadata.sorted_tables:
+            if table.name not in present:
+                continue
             # table names come from our own metadata, never from input
             sql = f'{CHECKSUM_SQL} FROM "{table.name}" t'
             row = (await connection.execute(text(sql))).one()
             tables[table.name] = {"rows": int(row[0]), "md5": str(row[1])}
-        revision = (
-            await connection.execute(text("SELECT version_num FROM alembic_version"))
-        ).scalar()
+        revision = None
+        if "alembic_version" in present:
+            revision = (
+                await connection.execute(text("SELECT version_num FROM alembic_version"))
+            ).scalar()
     return {"created_at": datetime.now(UTC).isoformat(), "revision": revision, "tables": tables}
 
 

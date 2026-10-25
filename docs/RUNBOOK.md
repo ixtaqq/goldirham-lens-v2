@@ -10,7 +10,7 @@ You need a GitHub account, a Telegram account, and free accounts at Supabase, Ve
 
 1. Create a **private** GitHub repository. GitHub turns off scheduled workflows in public repositories after 60 days without activity.
 2. Push this code to its `main` branch.
-3. In **Settings > Environments**, create an environment named `production` and add yourself as a required reviewer. Every migration waits for your approval there.
+3. In **Settings > Environments**, create an environment named `production`. If your GitHub plan offers **Required reviewers** for private repositories, add yourself, and every migration then waits for your approval. The free plan does not, and a migration then runs as soon as you start it.
 
 ### 2. Create the Telegram bot
 
@@ -75,7 +75,7 @@ In the `production` environment, add one more secret, `DATABASE_URL_MIGRATOR`. I
 
 ### 7. Create the schema
 
-Run **Actions > Migrate production schema** with `migrate` typed in the box. It takes a backup first, then waits for your approval, then runs `alembic upgrade head`. **This changes the production database.**
+Run **Actions > Migrate production schema** with `migrate` typed in the box. It takes a backup first, waits for your approval if the environment has a required reviewer, then runs `alembic upgrade head`. **This changes the production database.**
 
 ### 8. Deploy the webhook
 
@@ -195,7 +195,7 @@ Run `python -m uv run lens readiness`. If it reports a calendar check where ever
 
 ### The database schema is behind the code
 
-The briefing arrives in degraded form and says so. Run **Actions > Migrate production schema** and approve it.
+The briefing arrives in degraded form and says so. Run **Actions > Migrate production schema** (and approve it, if you set a required reviewer).
 
 When you merge a change that adds a migration, run the migrate workflow straight away, before the next 07:00 run. Until it runs, the briefing is degraded and commands that use the new tables fail. Migration `0002` adds `level_alerts` for `/level`.
 
