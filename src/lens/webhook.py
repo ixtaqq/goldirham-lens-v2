@@ -21,6 +21,7 @@ from lens.storage.db import Database
 
 log = get_logger("lens.webhook")
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+TELEGRAM_TIMEOUT_SECONDS = 8.0
 
 
 class GitHubDispatcher:
@@ -72,7 +73,7 @@ def runtime() -> _Runtime:
             load_settings(),
             secrets,
             Database(url.get_secret_value(), pooled=secrets.database_url_pooled is not None),
-            TelegramClient(secrets.require("telegram_bot_token")),
+            TelegramClient(secrets.require("telegram_bot_token"), timeout=TELEGRAM_TIMEOUT_SECONDS),
             dispatcher,
         )
     return _runtime

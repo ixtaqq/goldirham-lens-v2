@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Sequence
-from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -53,6 +53,17 @@ class FakeTelegram:
 
     async def close(self) -> None:
         return None
+
+
+@dataclass
+class SlowTelegram(FakeTelegram):
+    delay: float = 0.0
+
+    async def send_message(
+        self, chat_id: int, text_: str, *, reply_markup: dict[str, Any] | None = None
+    ) -> int:
+        await asyncio.sleep(self.delay)
+        return await super().send_message(chat_id, text_, reply_markup=reply_markup)
 
 
 class FakeCollector:
@@ -213,6 +224,75 @@ async def test_timeout_after_chunk_two_holds_and_resend_sends_only_chunk_three(
     )
     assert outcome.state is DeliveryState.RESENT
     assert resend.sent == stored.chunks[2:]
+
+
+async def test_a_run_that_died_mid_send_is_held_by_the_next_trigger(
+    db: Database, migrated_url: str, tmp_path: Path
+) -> None:
+    crashing = FakeTelegram(fail_on={2: RuntimeError("runner killed")})
+    with pytest.raises(RuntimeError, match="runner killed"):
+        await run_cycle(
+            load_settings(),
+            _secrets(migrated_url),
+            trigger="schedule_1",
+            deps=_deps(migrated_url, crashing, tmp_path, chunk_limit=350),
+        )
+
+    second = FakeTelegram()
+    later = NOW + timedelta(minutes=40)
+    result = await run_cycle(
+        load_settings(),
+        _secrets(migrated_url),
+        trigger="schedule_2",
+        deps=replace(_deps(migrated_url, second, tmp_path, chunk_limit=350), clock=lambda: later),
+    )
+
+    assert result.outcome is Outcome.HELD
+    assert second.sent == []
+    async with db.session() as session:
+        stored = await CycleRepo(session).briefing_on(OWNER, NOW.date().replace(day=16))
+    assert stored is not None
+    assert stored.delivery_state is DeliveryState.HELD
+    assert stored.message_ids[0] == 1001
+    assert all(m is None for m in stored.message_ids[1:])
+
+
+async def test_a_resend_past_its_deadline_stops_and_stays_held(
+    db: Database, migrated_url: str, tmp_path: Path
+) -> None:
+    telegram = FakeTelegram(fail_on={2: TelegramAmbiguousError("ReadTimeout")})
+    await run_cycle(
+        load_settings(),
+        _secrets(migrated_url),
+        trigger="schedule_1",
+        deps=_deps(migrated_url, telegram, tmp_path, chunk_limit=350),
+    )
+    async with db.session() as session:
+        stored = await CycleRepo(session).briefing_on(OWNER, NOW.date().replace(day=16))
+    assert stored is not None
+    assert stored.delivery_id is not None
+    assert len(stored.chunks) >= 3
+
+    slow = SlowTelegram(delay=0.2)
+    outcome = await deliver(
+        db,
+        slow,
+        delivery_id=stored.delivery_id,
+        chat_id=OWNER,
+        chunks=stored.chunks,
+        allowed=frozenset({DeliveryState.HELD}),
+        clock=lambda: NOW,
+        final_state=DeliveryState.RESENT,
+        deadline=0.1,
+    )
+
+    assert outcome.state is DeliveryState.HELD
+    assert outcome.sent_chunks == 1
+    async with db.session() as session:
+        after = await CycleRepo(session).briefing_on(OWNER, NOW.date().replace(day=16))
+    assert after is not None
+    assert after.delivery_state is DeliveryState.HELD
+    assert sum(m is not None for m in after.message_ids) == 2
 
 
 async def test_definite_failure_releases_the_day_for_the_next_trigger(

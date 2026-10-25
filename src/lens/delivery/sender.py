@@ -39,16 +39,23 @@ async def deliver(
     allowed: frozenset[DeliveryState],
     clock: Callable[[], datetime],
     final_state: DeliveryState = DeliveryState.SENT,
+    deadline: float = SEND_DEADLINE_SECONDS,
 ) -> DeliveryResult:
     """Claim the delivery, send every chunk without a message id, and record each one as it lands.
 
     A definite failure before any chunk was accepted leaves the delivery FAILED, so a later run
-    may retry. Anything that might have reached Telegram leaves it HELD for the owner to review.
+    may retry. Anything that might have reached Telegram leaves it HELD for the owner to review,
+    and so does a delivery whose earlier sender died mid-send. No chunk starts after `deadline`
+    seconds; the rest stay HELD for a resend.
     """
     async with db.session() as session:
         token = await CycleRepo(session).claim_delivery(delivery_id, allowed=allowed, now=clock())
         message_ids = await CycleRepo(session).delivery_message_ids(delivery_id)
     if token is None:
+        async with db.session() as session:
+            stale = await CycleRepo(session).hold_stale_sending(clock(), delivery_id=delivery_id)
+        if stale:
+            return DeliveryResult(DeliveryState.HELD, 0, "stale_sending")
         return DeliveryResult(DeliveryState.SENDING, 0, "claim_refused")
     if len(message_ids) != len(chunks):
         message_ids = [None] * len(chunks)
@@ -57,12 +64,18 @@ async def deliver(
     for index, text in enumerate(chunks):
         if message_ids[index] is not None:
             continue
+        if time.monotonic() - started > deadline:
+            async with db.session() as session:
+                await CycleRepo(session).finish_delivery(
+                    delivery_id, token, DeliveryState.HELD, clock(), "deadline"
+                )
+            return DeliveryResult(DeliveryState.HELD, sent, "deadline")
         while True:
             try:
                 message_id = await telegram.send_message(chat_id, text)
                 break
             except TelegramRateLimitedError as error:
-                remaining = SEND_DEADLINE_SECONDS - (time.monotonic() - started)
+                remaining = deadline - (time.monotonic() - started)
                 if error.retry_after > min(MAX_RATE_LIMIT_WAIT, remaining):
                     return await _settle(
                         db,

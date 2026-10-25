@@ -9,7 +9,7 @@ import pytest
 
 from lens.domain.instruments import AssetClass, Instrument
 from lens.domain.portfolio import FxRate, TxKind
-from lens.storage.cycles import ClaimOutcome, CycleRepo, DeliveryState
+from lens.storage.cycles import STALE_SENDING, ClaimOutcome, CycleRepo, DeliveryState
 from lens.storage.db import Database
 from lens.storage.ledger import LedgerRepo
 from lens.storage.market import MarketRepo
@@ -203,6 +203,38 @@ async def test_held_resend_can_only_be_claimed_once(db: Database) -> None:
 
     results = await asyncio.gather(resend(), resend())
     assert sum(r is not None for r in results) == 1
+
+
+async def test_a_sending_delivery_is_held_only_after_the_cutoff(db: Database) -> None:
+    await _owner(db)
+    async with db.session() as s:
+        stored = await CycleRepo(s).save_briefing(
+            owner_id=OWNER,
+            day=DAY,
+            run_id=None,
+            mode="deterministic",
+            document={},
+            chunks=["a", "b"],
+            inputs={},
+            code_version="x",
+        )
+        assert stored.delivery_id is not None
+        token = await CycleRepo(s).claim_delivery(
+            stored.delivery_id, allowed=frozenset({DeliveryState.COMPOSED}), now=NOW
+        )
+        assert token is not None
+        await CycleRepo(s).record_chunk(stored.delivery_id, token, 0, 777)
+
+    async with db.session() as s:
+        assert await CycleRepo(s).hold_stale_sending(NOW + STALE_SENDING, owner_id=OWNER) == 0
+    async with db.session() as s:
+        late = NOW + STALE_SENDING + timedelta(seconds=1)
+        assert await CycleRepo(s).hold_stale_sending(late, owner_id=OWNER) == 1
+    async with db.session() as s:
+        held = await CycleRepo(s).held_deliveries(OWNER)
+        assert [b.message_ids for b in held] == [[777, None]]
+        with pytest.raises(RuntimeError, match="claim lost"):
+            await CycleRepo(s).record_chunk(stored.delivery_id, token, 1, 778)
 
 
 async def test_bar_revision_is_recorded_and_bars_round_trip(db: Database) -> None:

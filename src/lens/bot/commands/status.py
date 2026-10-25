@@ -14,6 +14,9 @@ from lens.storage.cycles import CycleRepo, DeliveryState
 from lens.storage.models import OperationalEvent, PipelineRun, StageRun
 from lens.storage.ops import OpsRepo
 
+# Leaves room in the 30-second Vercel limit for the callback answer, the last send and the reply.
+RESEND_DEADLINE_SECONDS = 6.0
+
 
 @command("health", "/health", "On-time rate, last run, provider health, backups")
 async def health(ctx: BotContext, args: list[str]) -> Reply:
@@ -108,6 +111,7 @@ async def usage(ctx: BotContext, args: list[str]) -> Reply:
 @command("held", "/held", "Review briefings whose delivery was uncertain")
 async def held(ctx: BotContext, args: list[str]) -> Reply:
     async with ctx.db.session() as session:
+        await CycleRepo(session).hold_stale_sending(ctx.now, owner_id=ctx.owner_id)
         briefings = await CycleRepo(session).held_deliveries(ctx.owner_id)
     if not briefings:
         return Reply.text("Nothing is held. Every briefing was delivered or definitely failed.")
@@ -144,9 +148,15 @@ async def held_resend(ctx: BotContext, payload: dict[str, Any]) -> Reply:
         allowed=frozenset({DeliveryState.HELD}),
         clock=lambda: ctx.now,
         final_state=DeliveryState.RESENT,
+        deadline=RESEND_DEADLINE_SECONDS,
     )
     if result.state is DeliveryState.RESENT:
         return Reply.text(f"Resent {result.sent_chunks} message(s). The briefing is complete.")
+    if result.error_class == "deadline":
+        return Reply.text(
+            f"Resent {result.sent_chunks} message(s) before the time limit. "
+            "The rest are still held; send /held to continue."
+        )
     return Reply.text(
         f"Resend stopped ({esc(result.error_class or 'unknown')}). It is still held; try /held later."
     )

@@ -22,6 +22,7 @@ from lens.storage.models import (
 )
 
 STALE_CLAIM = timedelta(minutes=20)
+STALE_SENDING = timedelta(minutes=10)
 
 
 class ClaimOutcome(StrEnum):
@@ -365,6 +366,33 @@ class CycleRepo:
             .where(DeliveryRow.id == delivery_id, DeliveryRow.claim_token == token)
             .values(**values)
         )
+
+    async def hold_stale_sending(
+        self, now: datetime, *, owner_id: int | None = None, delivery_id: int | None = None
+    ) -> int:
+        """Hold deliveries whose sender died mid-send. Their unsent chunks wait for the owner.
+
+        Clearing the claim token means a sender that is somehow still alive can record nothing.
+        """
+        condition = (DeliveryRow.state == DeliveryState.SENDING.value) & (
+            DeliveryRow.updated_at < now - STALE_SENDING
+        )
+        if owner_id is not None:
+            condition = condition & (DeliveryRow.owner_id == owner_id)
+        if delivery_id is not None:
+            condition = condition & (DeliveryRow.id == delivery_id)
+        result = await self.s.execute(
+            update(DeliveryRow)
+            .where(condition)
+            .values(
+                state=DeliveryState.HELD.value,
+                claim_token=None,
+                error_class="stale_sending",
+                held_at=now,
+                updated_at=now,
+            )
+        )
+        return int(result.rowcount)  # type: ignore[attr-defined]
 
     async def held_deliveries(self, owner_id: int) -> list[StoredBriefing]:
         ids = await self.s.scalars(
