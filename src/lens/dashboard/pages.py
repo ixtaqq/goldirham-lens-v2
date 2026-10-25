@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import html
 import re
-from collections.abc import Iterable, Sequence
-from datetime import datetime
+from collections.abc import Callable, Iterable, Sequence
+from datetime import date, datetime
 from decimal import Decimal
 
 from lens.backtest.report import to_markdown
@@ -59,7 +59,25 @@ label{display:grid;gap:.2rem;font-size:.8rem;color:var(--fog)}
 input,select,button{font:inherit;background:var(--graphite);color:var(--paper);
   border:1px solid var(--rule-strong);padding:.35rem .6rem}
 button{cursor:pointer}svg{display:block;width:100%;height:auto}
+.chart-wrap{overflow-x:auto;margin:1rem 0 .4rem}.chart-wrap svg{min-width:640px}
+.chart text{fill:var(--fog);font:12px ui-monospace,SFMono-Regular,Menlo,monospace}
+.chart text.label{fill:var(--paper)}.chart .grid{stroke:var(--rule);stroke-width:1}
+.chart .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .equity{stroke:var(--paper)}.chart .hit{fill:transparent}
+.chart .s-1{stroke:#3987e5}.chart .s-2{stroke:#d95926}.chart .s-3{stroke:#199e70}.chart .s-4{stroke:#c98500}
+.chart circle.end{stroke:none}.chart circle.equity{fill:var(--paper)}
+.chart circle.s-1,.swatch.s-1{fill:#3987e5;background:#3987e5}
+.chart circle.s-2,.swatch.s-2{fill:#d95926;background:#d95926}
+.chart circle.s-3,.swatch.s-3{fill:#199e70;background:#199e70}
+.chart circle.s-4,.swatch.s-4{fill:#c98500;background:#c98500}
+.legend{display:flex;gap:1.1rem;flex-wrap:wrap;list-style:none;padding:0;margin:0 0 1rem;
+  font-size:.85rem;color:var(--fog)}
+.swatch{display:inline-block;width:.75rem;height:.75rem;border-radius:2px;margin-right:.4rem;
+  vertical-align:-.05rem}
 """
+
+# Exposure colours follow the asset class, never its rank (validated for the dark surface).
+SERIES_SLOT = {"stock": "s-1", "etf": "s-2", "crypto": "s-3"}
 
 _TAG = re.compile(r"<(/?)(b|i|code)>")
 _MARKS = {"b": "strong", "i": "em", "code": "code"}
@@ -202,30 +220,132 @@ def briefing_page(detail: BriefingDetail) -> str:
     return layout(long_day(detail.day), body, current="/briefings")
 
 
-def _sparkline(points: list[PortfolioPoint]) -> str:
-    if len(points) < 2:
+Series = tuple[str, str, list[tuple[date, Decimal]]]
+_W, _H, _LEFT, _RIGHT, _TOP, _BOTTOM = 720, 240, 104, 112, 12, 30
+_LINE = 14
+
+
+def _day(day: date) -> str:
+    return f"{short_day(day)} {day.year}"
+
+
+def line_chart(
+    series: Sequence[Series],
+    *,
+    label: str,
+    value: Callable[[Decimal], str],
+    low: Decimal | None = None,
+    high: Decimal | None = None,
+) -> str:
+    """An SVG line chart of (name, css class, [(day, value)]) series.
+
+    Each point's title is its tooltip, and every series' last value is labelled at the line end.
+    """
+    days = sorted({d for _, _, pts in series for d, _ in pts})
+    values = [v for _, _, pts in series for _, v in pts]
+    if len(days) < 2 or not values:
         return ""
-    values = [float(p.total) for p in points]
-    low, high = min(values), max(values)
-    span = (high - low) or 1.0
-    width, height = 720, 160
-    step = width / (len(values) - 1)
-    path = " ".join(
-        f"{'M' if i == 0 else 'L'}{i * step:.1f} {height - 8 - (v - low) / span * (height - 16):.1f}"
-        for i, v in enumerate(values)
+    bottom = min(values) if low is None else low
+    top = max(values) if high is None else high
+    span = (top - bottom) or Decimal(1)
+    first, reach = days[0], (days[-1] - days[0]).days
+    plot_w, plot_h = _W - _LEFT - _RIGHT, _H - _TOP - _BOTTOM
+
+    def x(day: date) -> float:
+        return _LEFT + plot_w * (day - first).days / reach
+
+    def y(v: Decimal) -> float:
+        return _TOP + plot_h * float((top - v) / span)
+
+    ends: list[tuple[float, float, str]] = []
+    parts = [
+        f"<line class='grid' x1='{_LEFT}' x2='{_W - _RIGHT}' y1='{y(tick):.1f}' "
+        f"y2='{y(tick):.1f}'/><text x='{_LEFT - 8}' y='{y(tick) + 4:.1f}' "
+        f"text-anchor='end'>{esc(value(tick))}</text>"
+        for tick in (top, bottom + span / 2, bottom)
+    ]
+    parts.append(f"<text x='{_LEFT}' y='{_H - 8}'>{esc(_day(days[0]))}</text>")
+    parts.append(
+        f"<text x='{_W - _RIGHT}' y='{_H - 8}' text-anchor='end'>{esc(_day(days[-1]))}</text>"
     )
-    return (
-        f"<svg viewBox='0 0 {width} {height}' role='img' aria-label='Portfolio value in "
-        f"{esc(points[-1].currency)} by briefing date'><path d='{path}' fill='none' "
-        "stroke='#f0eee7' stroke-width='1.5' vector-effect='non-scaling-stroke'/></svg>"
+    for name, css, points in series:
+        if not points:
+            continue
+        path = " ".join(
+            f"{'M' if i == 0 else 'L'}{x(d):.1f} {y(v):.1f}" for i, (d, v) in enumerate(points)
+        )
+        parts.append(f"<path class='line {css}' d='{path}'/>")
+        prefix = f", {esc(name)}" if len(series) > 1 else ""
+        parts += [
+            f"<circle class='hit' cx='{x(d):.1f}' cy='{y(v):.1f}' r='7'>"
+            f"<title>{esc(_day(d))}{prefix}: {esc(value(v))}</title></circle>"
+            for d, v in points
+        ]
+        end_day, end_value = points[-1]
+        tag = f"{name} {value(end_value)}" if len(series) > 1 else value(end_value)
+        parts.append(
+            f"<circle class='end {css}' cx='{x(end_day):.1f}' cy='{y(end_value):.1f}' r='4'/>"
+        )
+        ends.append((y(end_value) + 4, x(end_day) + 9, tag))
+    previous = float("-inf")
+    for label_y, label_x, tag in sorted(ends):
+        label_y = max(label_y, previous + _LINE)
+        previous = label_y
+        parts.append(f"<text class='label' x='{label_x:.1f}' y='{label_y:.1f}'>{esc(tag)}</text>")
+    svg = (
+        f"<div class='chart-wrap'><svg class='chart' viewBox='0 0 {_W} {_H}' role='img' "
+        f"aria-label='{esc(label)}'>" + "".join(parts) + "</svg></div>"
+    )
+    if len(series) < 2:
+        return svg
+    legend = "".join(
+        f"<li><span class='swatch {css}'></span>{esc(name)}</li>" for name, css, _ in series
+    )
+    return f"{svg}<ul class='legend'>{legend}</ul>"
+
+
+def _exposure_chart(points: list[PortfolioPoint]) -> str:
+    classes = [c for c in SERIES_SLOT if any(c in p.exposure for p in points)]
+    classes += sorted({c for p in points for c in p.exposure} - set(classes))
+    series: list[Series] = [
+        (
+            name,
+            SERIES_SLOT.get(name, "s-4"),
+            [(p.day, p.exposure[name]) for p in points if name in p.exposure],
+        )
+        for name in classes
+    ]
+    return line_chart(
+        series,
+        label=(
+            "Exposure by asset class, percent of the valued portfolio, "
+            f"{_day(points[0].day)} to {_day(points[-1].day)}"
+        ),
+        value=lambda v: f"{v:.1f}%",
+        low=Decimal(0),
+        high=Decimal(100),
     )
 
 
 def portfolio(points: list[PortfolioPoint]) -> str:
     rows = [(esc(p.day.isoformat()), esc(money(p.total, p.currency))) for p in reversed(points)]
+    charts = ""
+    if len(points) >= 2:
+        currency = points[-1].currency
+        charts = line_chart(
+            [("Total", "equity", [(p.day, p.total) for p in points])],
+            label=(
+                f"Portfolio value in {currency} by briefing date, "
+                f"{_day(points[0].day)} to {_day(points[-1].day)}"
+            ),
+            value=lambda v: money(v, currency),
+        )
+        exposure = _exposure_chart(points)
+        if exposure:
+            charts += f"<h2>Exposure by asset class</h2>{exposure}"
     body = (
         "<h1>Portfolio history</h1><p class='muted'>The total from each stored briefing, in the base "
-        f"currency, valued with that day's verified marks and FX.</p>{_sparkline(points)}"
+        f"currency, valued with that day's verified marks and FX.</p>{charts}"
         + table(("Briefing date", "Total"), rows, frozenset({1}))
     )
     return layout("Portfolio", body, current="/portfolio")

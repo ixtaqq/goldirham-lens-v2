@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -48,6 +48,7 @@ class PortfolioPoint:
     day: date
     total: Decimal
     currency: str
+    exposure: dict[str, Decimal] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,7 +184,13 @@ async def portfolio_history(
         if day in points or not portfolio:
             continue
         points[day] = PortfolioPoint(
-            day, Decimal(str(portfolio["total_base"])), str(portfolio["base_currency"])
+            day,
+            Decimal(str(portfolio["total_base"])),
+            str(portfolio["base_currency"]),
+            {
+                str(k): Decimal(str(v))
+                for k, v in (portfolio.get("exposure_by_asset_class") or {}).items()
+            },
         )
     return sorted(points.values(), key=lambda p: p.day)
 

@@ -87,7 +87,13 @@ async def seed(db: Database) -> None:
                 briefing_date=DAY,
                 run_id=run.id if owner == OWNER else None,
                 mode="deterministic",
-                document={"portfolio": {"total_base": total, "base_currency": "MYR"}},
+                document={
+                    "portfolio": {
+                        "total_base": total,
+                        "base_currency": "MYR",
+                        "exposure_by_asset_class": {"stock": "100.0"},
+                    }
+                },
                 chunks=[f"<b>Goldirham Lens</b> · {words} &amp; <script>x</script>"],
                 inputs={},
                 code_version="abc1234",
