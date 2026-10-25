@@ -122,3 +122,28 @@ def test_doctor_reports_each_check(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "PASS  provider coinbase" in result.output
     assert "FAIL  telegram" in result.output
     assert "PASS  owner" in result.output
+
+
+def test_with_pg_env_runs_a_command_with_the_password_only_in_its_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import subprocess
+
+    seen: dict[str, Any] = {}
+
+    def fake_run(command: list[str], *, env: dict[str, str], check: bool) -> Any:
+        seen.update(command=command, env=env)
+        return subprocess.CompletedProcess(command, 7)
+
+    monkeypatch.setenv(
+        "DATABASE_URL_DIRECT", "postgresql+asyncpg://lens:s3cret-pw@db.example.co:5432/postgres"
+    )
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+
+    result = runner.invoke(cli.app, ["ops", "with-pg-env", "--", "pg_dump", "--format=custom"])
+
+    assert result.exit_code == 7
+    assert seen["command"] == ["pg_dump", "--format=custom"]
+    assert seen["env"]["PGPASSWORD"] == "s3cret-pw"
+    assert "s3cret-pw" not in " ".join(seen["command"])
+    assert "s3cret-pw" not in result.output

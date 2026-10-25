@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import subprocess
 import sys
 from collections.abc import Coroutine
 from datetime import UTC, date, datetime
@@ -413,6 +414,28 @@ def ops_manifest(
 
     out.write_text(json.dumps(_run(build()), indent=2, sort_keys=True), encoding="utf-8")
     typer.echo(f"manifest written to {out}")
+
+
+@ops_app.command(
+    "with-pg-env", context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+)
+def ops_with_pg_env(
+    ctx: typer.Context,
+    url_env: Annotated[
+        str, typer.Option(help="Environment variable holding the URL")
+    ] = "DATABASE_URL_DIRECT",
+) -> None:
+    """Run the command after `--` with PG* variables from URL_ENV, keeping the URL off its arguments."""
+    from lens.ops.backup import libpq_environment
+
+    url = os.environ.get(url_env)
+    if not url:
+        raise typer.BadParameter(f"{url_env} is not set")
+    if not ctx.args:
+        raise typer.BadParameter("give the command to run after --")
+    env = os.environ | libpq_environment(url)
+    completed = subprocess.run(ctx.args, env=env, check=False)  # noqa: S603 - the operator's own command
+    raise typer.Exit(completed.returncode)
 
 
 @ops_app.command("verify-restore")

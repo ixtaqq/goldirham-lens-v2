@@ -40,9 +40,11 @@ jobs:
           umask 077
           mkdir -p staging out
           uv run --no-sync lens ops manifest --out staging/manifest.json
-          LIBPQ_URL="${DATABASE_URL_DIRECT/+asyncpg/}"
-          docker run --rm --network host -v "$PWD/staging:/out" postgres:17-alpine \
-            pg_dump --format=custom --no-owner --no-privileges --file=/out/lens.dump.partial "$LIBPQ_URL"
+          # PG* variables carry the connection, so the password is in no process's arguments.
+          uv run --no-sync lens ops with-pg-env -- docker run --rm --network host \
+            -e PGHOST -e PGPORT -e PGUSER -e PGPASSWORD -e PGDATABASE -e PGSSLMODE \
+            -v "$PWD/staging:/out" postgres:17-alpine \
+            pg_dump --format=custom --no-owner --no-privileges --file=/out/lens.dump.partial
           mv staging/lens.dump.partial staging/lens.dump
           age -r "$AGE_RECIPIENT" -o staging/lens.dump.age staging/lens.dump
           rm staging/lens.dump

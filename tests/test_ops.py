@@ -4,7 +4,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from lens.ops.backup import UnsafeTargetError, compare_manifests, ensure_drill_target
+from lens.ops.backup import (
+    UnsafeTargetError,
+    compare_manifests,
+    ensure_drill_target,
+    libpq_environment,
+)
 
 NOW = datetime(2026, 10, 16, 3, 0, tzinfo=UTC)
 
@@ -53,3 +58,18 @@ def test_stale_backup_and_missing_rows_fail_the_drill() -> None:
     assert len(result.differences) == 2
     assert result.differences[0].startswith("backup is older than")
     assert result.differences[1].startswith("bars: expected")
+
+
+def test_libpq_environment_carries_the_connection_without_a_url() -> None:
+    env = libpq_environment(
+        "postgresql+asyncpg://lens%40prod:p%2Fss%3Aword@db.example.co:6543/postgres?sslmode=require"
+    )
+    assert env == {
+        "PGHOST": "db.example.co",
+        "PGPORT": "6543",
+        "PGUSER": "lens@prod",
+        "PGPASSWORD": "p/ss:word",
+        "PGDATABASE": "postgres",
+        "PGSSLMODE": "require",
+    }
+    assert libpq_environment("postgres://u:p@localhost/lens")["PGPORT"] == "5432"
