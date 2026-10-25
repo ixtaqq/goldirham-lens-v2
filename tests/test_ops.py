@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 from alembic import command
 from alembic.config import Config
+from sqlalchemy import text
 
 from lens.ops.backup import (
     UnsafeTargetError,
@@ -116,3 +117,40 @@ async def _manifest_of(url: str) -> dict[str, Any]:
         return await manifest(db)
     finally:
         await db.dispose()
+
+
+@pytest.mark.db
+def test_recording_an_event_before_the_first_migration_is_a_stated_no_op(
+    migrated_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from typer.testing import CliRunner
+
+    from lens import cli
+
+    runner = CliRunner()
+    empty = migrated_url.replace("/lens_test", "/lens_test_manifest", 1)
+    asyncio.run(_ensure_database(empty))
+    monkeypatch.setenv("DATABASE_URL_DIRECT", empty)
+    config = Config("alembic.ini")
+    config.cmd_opts = None
+    command.downgrade(config, "base")
+
+    before = runner.invoke(cli.app, ["ops", "record", "backup_ok", "--detail", "run 1"])
+    assert before.exit_code == 0, before.output
+    assert "operational_events does not exist yet" in before.output
+
+    monkeypatch.setenv("DATABASE_URL_DIRECT", migrated_url)
+    after = runner.invoke(cli.app, ["ops", "record", "backup_ok", "--detail", "run 2"])
+    assert after.exit_code == 0, after.output
+    assert "does not exist" not in after.output
+
+    async def kinds() -> list[str]:
+        db = Database(migrated_url, rollback_only=True)
+        try:
+            async with db.session() as session:
+                rows = await session.execute(text("SELECT kind FROM operational_events"))
+                return [r[0] for r in rows]
+        finally:
+            await db.dispose()
+
+    assert "backup_ok" in asyncio.run(kinds())

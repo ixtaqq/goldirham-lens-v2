@@ -533,6 +533,8 @@ def ops_verify_restore(
 @ops_app.command("record")
 def ops_record(kind: str, detail: Annotated[str, typer.Option()] = "") -> None:
     """Record an operational event such as backup_ok or restore_drill_ok."""
+    from sqlalchemy import text
+
     from lens.storage.db import Database
     from lens.storage.ops import OpsRepo
 
@@ -543,6 +545,10 @@ def ops_record(kind: str, detail: Annotated[str, typer.Option()] = "") -> None:
         db = Database(secrets.require("database_url_direct"))
         try:
             async with db.session() as session:
+                # The backup before the first migration runs against an empty database.
+                if await session.scalar(text("SELECT to_regclass('operational_events')")) is None:
+                    typer.echo("operational_events does not exist yet; nothing recorded.")
+                    return
                 await OpsRepo(session).record_event(
                     kind=kind,
                     severity="info",
