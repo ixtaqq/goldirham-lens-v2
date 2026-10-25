@@ -113,6 +113,14 @@ python -m uv run lens strategy activate pullback_in_uptrend <version>
 
 Read the report first. The first report found that the v1 rules did not beat random entries with the same stops and targets ([ADR 0005](adr/0005-backtest-and-activation.md)). Activating anyway is your call.
 
+To look for better parameters, run a walk-forward sweep. It writes a report to `reports/` and changes nothing else:
+
+```powershell
+python -m uv run lens research --sweep rsi_trigger=20,25,30 --sweep atr_stop_multiple=1.5,2.0,2.5
+```
+
+If its verdict is "beats random", copy the latest choice's parameters into `config/settings.yaml`, run `lens backtest` to store that version's report, and decide whether to activate it.
+
 ### 12. Publish the showcase
 
 Create a second Vercel project from the same repository with the root directory set to `web`. It needs no environment variables and never connects to anything.
@@ -162,6 +170,8 @@ These times apply once `SCHEDULES_ENABLED` is `true` (step 10).
 | Monday 03:30 | `restore-drill.yml` | Nothing, unless the drill fails |
 | Saturday 10:00 | `provider-drift.yml` | A GitHub issue, only if a provider changed |
 
+On Sundays the briefing also carries a "This week" section. Set price alerts with `/level`; a reached level appears once in the next briefing.
+
 Check the service any time with `/health`, or locally:
 
 ```powershell
@@ -186,6 +196,8 @@ Run `python -m uv run lens readiness`. If it reports a calendar check where ever
 ### The database schema is behind the code
 
 The briefing arrives in degraded form and says so. Run **Actions > Migrate production schema** and approve it.
+
+When you merge a change that adds a migration, run the migrate workflow straight away, before the next 07:00 run. Until it runs, the briefing is degraded and commands that use the new tables fail. Migration `0002` adds `level_alerts` for `/level`.
 
 ### Restore from a backup
 

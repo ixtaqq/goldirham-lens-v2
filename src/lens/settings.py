@@ -32,6 +32,12 @@ class OwnerSettings(_Model):
     def today(self, now: datetime) -> date:
         return now.astimezone(ZoneInfo(self.timezone)).date()
 
+    def deadline_on(self, day: date) -> datetime:
+        return datetime.combine(day, self.delivery_deadline, ZoneInfo(self.timezone))
+
+    def is_late(self, now: datetime) -> bool:
+        return now > self.deadline_on(self.today(now))
+
 
 class RiskSettings(_Model):
     risk_per_trade_pct: Decimal = Field(Decimal("1.0"), gt=0, le=5)
@@ -75,6 +81,13 @@ class ScorecardSettings(_Model):
     window_days: int = Field(365, ge=30)
     min_sample: int = Field(20, ge=5)
     exit_model: Literal["full_to_t2", "half_at_t1_breakeven"] = "full_to_t2"
+
+
+class DigestSettings(_Model):
+    # Off unless settings.yaml turns it on, so inputs stored before the digest replay unchanged.
+    enabled: bool = False
+    weekday: int = Field(6, ge=0, le=6)
+    movers: int = Field(3, ge=1, le=10)
 
 
 class NarrativeSettings(_Model):
@@ -127,6 +140,7 @@ class Settings(_Model):
     holdings: HoldingsSettings = HoldingsSettings()
     alerts: AlertsSettings = AlertsSettings()
     scorecard: ScorecardSettings = ScorecardSettings()
+    digest: DigestSettings = DigestSettings()
     narrative: NarrativeSettings = NarrativeSettings()
     context: ContextSettings = ContextSettings()
     watchlist: tuple[WatchlistItem, ...]

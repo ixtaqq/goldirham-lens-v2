@@ -42,6 +42,22 @@ def ensure_drill_target(url: str) -> None:
         raise UnsafeTargetError("restore target URL may not override the host or database")
 
 
+def libpq_environment(url: str) -> dict[str, str]:
+    """PG* variables for libpq tools, so a connection string never appears on a command line."""
+    parts = urlsplit(url)
+    env = {
+        "PGHOST": parts.hostname or "",
+        "PGPORT": str(parts.port or 5432),
+        "PGUSER": unquote(parts.username or ""),
+        "PGPASSWORD": unquote(parts.password or ""),
+        "PGDATABASE": unquote(parts.path.lstrip("/")),
+    }
+    sslmode = parse_qs(parts.query).get("sslmode")
+    if sslmode:
+        env["PGSSLMODE"] = sslmode[0]
+    return env
+
+
 async def manifest(db: Database) -> dict[str, Any]:
     tables: dict[str, dict[str, Any]] = {}
     async with db.engine.connect() as connection:

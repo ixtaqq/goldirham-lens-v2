@@ -8,6 +8,7 @@ from lens.pipeline.analysis import Analysis
 from lens.pipeline.inputs import CycleInputs
 from lens.storage.cycles import CycleRepo
 from lens.storage.db import Database
+from lens.storage.levels import LevelAlertRepo
 from lens.storage.market import MarketRepo
 from lens.storage.signals import SignalRepo
 
@@ -45,6 +46,9 @@ async def persist_analysis(
                 created += 1
         for update in analysis.signal_updates:
             await signals.apply_state(update.signal.id, update.state, list(update.events))
+        alerts = LevelAlertRepo(session)
+        for hit in analysis.alert_hits:
+            await alerts.mark_triggered(hit.alert.id, hit.day, hit.close)
         for symbol, review in analysis.reviews.items():
             if symbol in ids:
                 await signals.save_review(

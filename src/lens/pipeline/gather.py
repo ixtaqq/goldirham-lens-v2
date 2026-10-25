@@ -26,6 +26,7 @@ from lens.pipeline.inputs import (
     CycleInputs,
     FundamentalsIn,
     FxIn,
+    LevelAlertIn,
     PreviousIn,
     SignalIn,
     TxIn,
@@ -34,6 +35,7 @@ from lens.settings import Settings
 from lens.storage.cycles import CycleRepo
 from lens.storage.db import Database
 from lens.storage.ledger import LedgerRepo
+from lens.storage.levels import LevelAlertRepo
 from lens.storage.market import MarketRepo
 from lens.storage.ops import OpsRepo
 from lens.storage.signals import SignalRepo
@@ -86,12 +88,12 @@ def benchmark_instruments(settings: Settings) -> list[Instrument]:
 def universe(
     settings: Settings,
     watched: Sequence[Instrument],
-    held: set[str],
+    priced: set[str],
     known: Mapping[str, Instrument],
 ) -> list[Instrument]:
-    """The watchlist, then benchmarks and held positions not on it, each symbol once."""
+    """The watchlist, then benchmarks and other priced symbols (holdings, alerts), each once."""
     extra = [known.get(b.symbol, b) for b in benchmark_instruments(settings)]
-    extra += [known[s] for s in sorted(held) if s in known]
+    extra += [known[s] for s in sorted(priced) if s in known]
     everything: dict[str, Instrument] = {}
     for instrument in (*watched, *extra):
         everything.setdefault(instrument.symbol, instrument)
@@ -198,8 +200,10 @@ async def gather(
         watched = await market.watchlist(owner_id)
         transactions = await LedgerRepo(session).transactions(owner_id)
         held = {s for s, p in build_positions(transactions).items() if p.quantity > 0}
+        level_alerts = await LevelAlertRepo(session).active(owner_id)
+        priced = held | {a.symbol for a in level_alerts}
         known = await market.instruments_by_symbol(
-            held | {b.symbol for b in benchmark_instruments(settings)}
+            priced | {b.symbol for b in benchmark_instruments(settings)}
         )
         open_signals = await SignalRepo(session).open_signals(owner_id)
         previous = await CycleRepo(session).latest_briefing(owner_id, before=briefing_date)
@@ -210,7 +214,7 @@ async def gather(
         active = await strategies.active_versions()
         prefs = await OpsRepo(session).preferences(owner_id)
         watched_symbols = {i.symbol for i in watched}
-        everything = universe(settings, watched, held, known)
+        everything = universe(settings, watched, priced, known)
         stored = await market.load_bars(
             [i.symbol for i in everything], since=briefing_date - STORED_HISTORY
         )
@@ -339,5 +343,15 @@ async def gather(
         previous_reviews=previous_reviews,
         context=context,
         sources_unavailable=tuple(dict.fromkeys(unavailable)),
+        level_alerts=tuple(
+            LevelAlertIn(
+                id=a.id,
+                symbol=a.symbol,
+                direction=a.direction,
+                level=a.level,
+                created_on=a.created_on,
+            )
+            for a in level_alerts
+        ),
     )
     return Gathered(inputs, data, calls)

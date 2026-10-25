@@ -5,10 +5,11 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from lens.domain.alerts import Direction
 from lens.domain.bars import BarQuality
 from lens.domain.evaluation import EventKind
 from lens.domain.holdings import MarkStatus, ReviewAction
@@ -143,6 +144,36 @@ class NarrativeSection(_Doc):
     model: str
 
 
+class WeekLine(_Doc):
+    symbol: str
+    currency: str
+    from_day: date
+    to_day: date
+    close: Decimal
+    change_pct: Decimal
+
+
+class WeekSection(_Doc):
+    benchmarks: tuple[WeekLine, ...]
+    holdings: tuple[WeekLine, ...]
+    gainers: tuple[WeekLine, ...]
+    decliners: tuple[WeekLine, ...]
+
+
+class LevelAlertLine(_Doc):
+    symbol: str
+    currency: str
+    direction: Direction
+    level: Decimal
+    day: date
+    close: Decimal
+
+
+# Sections added after launch. Left out of the stored form when empty, so briefings stored
+# before them replay identically.
+LATER_SECTIONS = ("week", "level_alerts")
+
+
 class BriefingDocument(_Doc):
     briefing_date: date
     generated_at: datetime
@@ -163,6 +194,12 @@ class BriefingDocument(_Doc):
     narrative: NarrativeSection | None
     strategy_versions: dict[str, str]
     disclaimer: str = DISCLAIMER
+    week: WeekSection | None = None
+    level_alerts: tuple[LevelAlertLine, ...] = ()
+
+    def stored(self) -> dict[str, Any]:
+        empty = {name for name in LATER_SECTIONS if not getattr(self, name)}
+        return self.model_dump(mode="json", exclude=empty)
 
     @property
     def healthy(self) -> bool:

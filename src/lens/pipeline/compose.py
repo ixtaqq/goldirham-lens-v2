@@ -12,18 +12,21 @@ from lens.domain.briefing import (
     DataAsOf,
     DataIssue,
     HoldingLine,
+    LevelAlertLine,
     MarketContext,
     Mode,
     NarrativeSection,
     PortfolioSection,
     SetupLine,
     SignalLine,
+    WeekLine,
+    WeekSection,
 )
 from lens.domain.evaluation import EventKind
 from lens.domain.holdings import ReviewAction
 from lens.domain.instruments import Market
 from lens.domain.reasons import PASS_CODES, ReasonCode
-from lens.pipeline.analysis import Analysis
+from lens.pipeline.analysis import Analysis, AssetAnalysis
 from lens.pipeline.inputs import CycleInputs
 
 MATERIAL_MOVE_PCT = Decimal(2)
@@ -222,6 +225,56 @@ def compose(inputs: CycleInputs, analysis: Analysis) -> BriefingDocument:
         market=market,
         narrative=narrative,
         strategy_versions={s.name: s.version for s in analysis.strategies if s.enabled},
+        week=_week(inputs, analysis),
+        level_alerts=tuple(
+            LevelAlertLine(
+                symbol=hit.alert.symbol,
+                currency=analysis.assets[hit.alert.symbol].asset.currency,
+                direction=hit.alert.direction,
+                level=hit.alert.level,
+                day=hit.day,
+                close=hit.close,
+            )
+            for hit in analysis.alert_hits
+        ),
+    )
+
+
+def _week_line(item: AssetAnalysis) -> WeekLine | None:
+    if item.week is None:
+        return None
+    return WeekLine(
+        symbol=item.asset.symbol,
+        currency=item.asset.currency,
+        from_day=item.week.from_bar.day,
+        to_day=item.week.to_bar.day,
+        close=item.week.to_bar.close,
+        change_pct=item.week.change_pct,
+    )
+
+
+def _week(inputs: CycleInputs, analysis: Analysis) -> WeekSection | None:
+    digest = analysis.settings.digest
+    if not digest.enabled or inputs.briefing_date.weekday() != digest.weekday:
+        return None
+
+    def lines(symbols: list[str]) -> tuple[WeekLine, ...]:
+        found = (_week_line(analysis.assets[s]) for s in symbols if s in analysis.assets)
+        return tuple(line for line in found if line is not None)
+
+    watched = lines(sorted(s for s, a in analysis.assets.items() if a.asset.watched))
+    holdings = analysis.portfolio.holdings if analysis.portfolio else ()
+    return WeekSection(
+        benchmarks=lines(list(analysis.settings.benchmarks.values())),
+        holdings=lines([h.symbol for h in holdings]),
+        gainers=tuple(
+            sorted(
+                (w for w in watched if w.change_pct > 0), key=lambda w: (-w.change_pct, w.symbol)
+            )
+        )[: digest.movers],
+        decliners=tuple(
+            sorted((w for w in watched if w.change_pct < 0), key=lambda w: (w.change_pct, w.symbol))
+        )[: digest.movers],
     )
 
 

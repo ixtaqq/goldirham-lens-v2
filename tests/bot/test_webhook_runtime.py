@@ -113,3 +113,23 @@ async def test_watchlist_add_starts_a_backfill(configured: None, db: Database) -
     async with db.session() as session:
         watched = [i.symbol for i in await MarketRepo(session).watchlist(42)]
     assert "AMD" in watched
+
+
+@respx.mock
+def test_a_failed_reply_still_answers_200_so_telegram_does_not_redeliver(
+    configured: None, db: Database
+) -> None:
+    respx.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage").mock(
+        return_value=httpx.Response(500, json={"ok": False})
+    )
+    dispatch = respx.post(
+        "https://api.github.com/repos/owner/goldirham-lens-v2/actions/workflows/daily.yml/dispatches"
+    ).mock(return_value=httpx.Response(204))
+    with TestClient(webhook.app) as client:
+        response = client.post(
+            "/api/telegram",
+            json=_update("/run"),
+            headers={"X-Telegram-Bot-Api-Secret-Token": SECRET},
+        )
+    assert response.status_code == 200
+    assert dispatch.call_count == 1

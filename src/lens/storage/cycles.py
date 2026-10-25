@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from enum import StrEnum
@@ -418,7 +419,7 @@ class CycleRepo:
         return result is not None
 
     async def on_time_rate(
-        self, owner_id: int, since: date, deadline_hour_utc: int
+        self, owner_id: int, since: date, deadline_on: Callable[[date], datetime]
     ) -> tuple[int, int]:
         """(delivered by deadline, days with a briefing) since `since`."""
         rows = (
@@ -428,13 +429,5 @@ class CycleRepo:
                 )
             )
         ).all()
-        on_time = sum(
-            1
-            for day, sent in rows
-            if sent is not None
-            and sent
-            <= datetime.combine(day, datetime.min.time(), sent.tzinfo).replace(
-                hour=deadline_hour_utc
-            )
-        )
+        on_time = sum(1 for day, sent in rows if sent is not None and sent <= deadline_on(day))
         return on_time, len(rows)

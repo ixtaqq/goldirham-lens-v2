@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import replace
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
 
+from lens.domain.alerts import Direction
 from lens.domain.instruments import AssetClass, Instrument
 from lens.domain.portfolio import FxRate, TxKind
+from lens.settings import OwnerSettings
 from lens.storage.cycles import STALE_SENDING, ClaimOutcome, CycleRepo, DeliveryState
 from lens.storage.db import Database
 from lens.storage.ledger import LedgerRepo
+from lens.storage.levels import LevelAlertRepo
 from lens.storage.market import MarketRepo
 from lens.storage.ops import OpsRepo
 from tests.helpers import make_bars
@@ -133,6 +136,34 @@ async def test_confirmation_is_used_exactly_once(db: Database) -> None:
     assert sum(r is not None for r in results) == 1
     async with db.session() as s:
         assert await OpsRepo(s).consume_action(token, 999, NOW) is None
+
+
+async def test_on_time_rate_follows_the_owner_deadline(db: Database) -> None:
+    await _owner(db)
+    owner = OwnerSettings(delivery_deadline=time(9, 0))  # 01:00 UTC
+    sent_at = {DAY: time(0, 30), DAY + timedelta(days=1): time(1, 30)}
+    for day, at in sent_at.items():
+        async with db.session() as s:
+            stored = await CycleRepo(s).save_briefing(
+                owner_id=OWNER,
+                day=day,
+                run_id=None,
+                mode="deterministic",
+                document={},
+                chunks=["a"],
+                inputs={},
+                code_version="x",
+            )
+            assert stored.delivery_id is not None
+            sent = datetime.combine(day, at, UTC)
+            token = await CycleRepo(s).claim_delivery(
+                stored.delivery_id, allowed=frozenset({DeliveryState.COMPOSED}), now=sent
+            )
+            assert token is not None
+            await CycleRepo(s).finish_delivery(stored.delivery_id, token, DeliveryState.SENT, sent)
+
+    async with db.session() as s:
+        assert await CycleRepo(s).on_time_rate(OWNER, DAY, owner.deadline_on) == (1, 2)
 
 
 async def test_delivered_briefing_is_never_replaced(db: Database) -> None:
@@ -281,3 +312,28 @@ async def test_ledger_round_trip(db: Database) -> None:
     assert [(t.symbol, t.kind, t.quantity, t.price) for t in txs] == [
         ("AAPL", TxKind.BUY, Decimal(10), Decimal("101.5"))
     ]
+
+
+async def test_level_alerts_list_cancel_and_trigger_once(db: Database) -> None:
+    await _owner(db)
+    async with db.session() as s:
+        ids = await MarketRepo(s).ensure_instruments([AAPL])
+        repo = LevelAlertRepo(s)
+        first = await repo.add(OWNER, ids["AAPL"], Direction.ABOVE, Decimal("200"), DAY)
+        second = await repo.add(OWNER, ids["AAPL"], Direction.BELOW, Decimal("150"), DAY)
+    async with db.session() as s:
+        repo = LevelAlertRepo(s)
+        assert [(a.id, a.symbol, a.direction) for a in await repo.active(OWNER)] == [
+            (first, "AAPL", Direction.ABOVE),
+            (second, "AAPL", Direction.BELOW),
+        ]
+        assert await repo.cancel(OWNER, second, NOW)
+        assert not await repo.cancel(OWNER, second, NOW)
+        assert not await repo.cancel(OWNER + 1, first, NOW)
+        assert await repo.mark_triggered(first, DAY, Decimal("201.5"))
+        assert not await repo.mark_triggered(first, DAY, Decimal("202"))
+    async with db.session() as s:
+        repo = LevelAlertRepo(s)
+        assert await repo.active(OWNER) == []
+        (done,) = await repo.recent(OWNER)
+        assert (done.id, done.triggered_on, done.triggered_close) == (first, DAY, Decimal("201.5"))

@@ -1,0 +1,1203 @@
+{
+  "strategy": "pullback_in_uptrend",
+  "period": [
+    "2022-09-28",
+    "2026-10-24"
+  ],
+  "folds": [
+    {
+      "train": [
+        "2022-09-28",
+        "2024-10-09"
+      ],
+      "test": [
+        "2024-10-10",
+        "2025-06-14"
+      ],
+      "scores": [
+        {
+          "version": "7975aa1af5a3",
+          "resolved": 44,
+          "expectancy_r": "0.26"
+        },
+        {
+          "version": "090f3d4d556d",
+          "resolved": 28,
+          "expectancy_r": "0.18"
+        },
+        {
+          "version": "d2611ed55597",
+          "resolved": 25,
+          "expectancy_r": "0.36"
+        },
+        {
+          "version": "e610b86f225f",
+          "resolved": 43,
+          "expectancy_r": "0.29"
+        },
+        {
+          "version": "52df5d457a0c",
+          "resolved": 28,
+          "expectancy_r": "0.18"
+        },
+        {
+          "version": "ee000d2e772d",
+          "resolved": 25,
+          "expectancy_r": "0.36"
+        },
+        {
+          "version": "f9b296cc8de6",
+          "resolved": 43,
+          "expectancy_r": "0.29"
+        },
+        {
+          "version": "ce6f5a8af9de",
+          "resolved": 28,
+          "expectancy_r": "0.18"
+        },
+        {
+          "version": "d44212838195",
+          "resolved": 25,
+          "expectancy_r": "0.36"
+        },
+        {
+          "version": "312ef8879384",
+          "resolved": 48,
+          "expectancy_r": "0.49"
+        },
+        {
+          "version": "ee3679f9961a",
+          "resolved": 31,
+          "expectancy_r": "0.32"
+        },
+        {
+          "version": "246bb77f533d",
+          "resolved": 26,
+          "expectancy_r": "0.46"
+        }
+      ],
+      "chosen": "312ef8879384",
+      "test_trades": [
+        {
+          "symbol": "1295.KL",
+          "signal_day": "2024-10-11",
+          "exit_day": "2025-02-07",
+          "status": "EXPIRED",
+          "outcome_r": "1.00"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2024-10-16",
+          "exit_day": "2024-10-28",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2024-10-23",
+          "exit_day": "2024-12-04",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2024-10-25",
+          "exit_day": "2024-10-31",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2024-10-30",
+          "exit_day": "2024-11-14",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2024-10-31",
+          "exit_day": "2024-11-04",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2024-11-01",
+          "exit_day": "2024-11-07",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2024-11-15",
+          "exit_day": "2024-11-20",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2024-11-25",
+          "exit_day": "2024-12-17",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SOL-USD",
+          "signal_day": "2024-11-26",
+          "exit_day": "2024-12-09",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SOL-USD",
+          "signal_day": "2024-12-10",
+          "exit_day": "2024-12-19",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2024-12-12",
+          "exit_day": "2024-12-18",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2024-12-18",
+          "exit_day": "2025-01-10",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "ETH-USD",
+          "signal_day": "2024-12-20",
+          "exit_day": "2025-01-13",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2024-12-30",
+          "exit_day": "2025-02-25",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2024-12-31",
+          "exit_day": "2025-01-13",
+          "status": "STOPPED",
+          "outcome_r": "-1.01"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2025-01-02",
+          "exit_day": "2025-01-10",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "BNB-USD",
+          "signal_day": "2025-01-07",
+          "exit_day": "2025-01-27",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2025-01-13",
+          "exit_day": "2025-01-21",
+          "status": "STOPPED",
+          "outcome_r": "-1.45"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2025-01-13",
+          "exit_day": "2025-01-27",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2025-01-13",
+          "exit_day": "2025-03-04",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SOL-USD",
+          "signal_day": "2025-01-13",
+          "exit_day": "2025-01-18",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2025-01-14",
+          "exit_day": "2025-03-06",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2025-01-22",
+          "exit_day": "2025-02-21",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "ETH-USD",
+          "signal_day": "2025-01-27",
+          "exit_day": "2025-02-02",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2025-01-28",
+          "exit_day": "2025-02-03",
+          "status": "STOPPED",
+          "outcome_r": "-1.25"
+        },
+        {
+          "symbol": "BNB-USD",
+          "signal_day": "2025-02-02",
+          "exit_day": "2025-02-03",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "BNB-USD",
+          "signal_day": "2025-02-04",
+          "exit_day": "2025-03-11",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2025-02-24",
+          "exit_day": "2025-02-27",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2025-02-26",
+          "exit_day": "2025-02-28",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2025-03-01",
+          "exit_day": "2025-03-09",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2025-03-06",
+          "exit_day": "2025-03-10",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2025-03-10",
+          "exit_day": "2025-05-08",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        }
+      ]
+    },
+    {
+      "train": [
+        "2022-09-28",
+        "2025-06-14"
+      ],
+      "test": [
+        "2025-06-15",
+        "2026-02-17"
+      ],
+      "scores": [
+        {
+          "version": "7975aa1af5a3",
+          "resolved": 71,
+          "expectancy_r": "0.06"
+        },
+        {
+          "version": "090f3d4d556d",
+          "resolved": 52,
+          "expectancy_r": "0.06"
+        },
+        {
+          "version": "d2611ed55597",
+          "resolved": 42,
+          "expectancy_r": "0.24"
+        },
+        {
+          "version": "e610b86f225f",
+          "resolved": 72,
+          "expectancy_r": "0.09"
+        },
+        {
+          "version": "52df5d457a0c",
+          "resolved": 52,
+          "expectancy_r": "0.10"
+        },
+        {
+          "version": "ee000d2e772d",
+          "resolved": 43,
+          "expectancy_r": "0.26"
+        },
+        {
+          "version": "f9b296cc8de6",
+          "resolved": 73,
+          "expectancy_r": "0.08"
+        },
+        {
+          "version": "ce6f5a8af9de",
+          "resolved": 53,
+          "expectancy_r": "0.01"
+        },
+        {
+          "version": "d44212838195",
+          "resolved": 45,
+          "expectancy_r": "0.21"
+        },
+        {
+          "version": "312ef8879384",
+          "resolved": 80,
+          "expectancy_r": "0.25"
+        },
+        {
+          "version": "ee3679f9961a",
+          "resolved": 57,
+          "expectancy_r": "0.07"
+        },
+        {
+          "version": "246bb77f533d",
+          "resolved": 48,
+          "expectancy_r": "0.26"
+        }
+      ],
+      "chosen": "ee000d2e772d",
+      "test_trades": [
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2025-06-20",
+          "exit_day": "2025-10-05",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "ETH-USD",
+          "signal_day": "2025-08-01",
+          "exit_day": "2025-08-22",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2025-08-01",
+          "exit_day": "2025-09-22",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "BNB-USD",
+          "signal_day": "2025-08-02",
+          "exit_day": "2025-09-17",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "MSFT",
+          "signal_day": "2025-08-11",
+          "exit_day": "2025-08-26",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SOL-USD",
+          "signal_day": "2025-08-18",
+          "exit_day": "2025-11-04",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "ETH-USD",
+          "signal_day": "2025-09-01",
+          "exit_day": "2025-10-10",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "MSFT",
+          "signal_day": "2025-09-05",
+          "exit_day": "2025-11-21",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2025-09-05",
+          "exit_day": "2025-10-29",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2025-09-25",
+          "exit_day": "2026-01-23",
+          "status": "EXPIRED",
+          "outcome_r": "2.43"
+        },
+        {
+          "symbol": "5183.KL",
+          "signal_day": "2025-10-06",
+          "exit_day": "2025-11-04",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2025-10-07",
+          "exit_day": "2025-10-10",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2025-10-10",
+          "exit_day": "2026-02-06",
+          "status": "EXPIRED",
+          "outcome_r": "1.12"
+        },
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2025-10-17",
+          "exit_day": "2025-11-14",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2025-11-07",
+          "exit_day": "2026-01-16",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "5183.KL",
+          "signal_day": "2025-11-12",
+          "exit_day": "2025-11-21",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "ETH-USD",
+          "signal_day": "2025-11-17",
+          "exit_day": "2026-01-31",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2025-11-20",
+          "exit_day": "2026-03-20",
+          "status": "EXPIRED",
+          "outcome_r": "-0.39"
+        },
+        {
+          "symbol": "MSFT",
+          "signal_day": "2025-12-10",
+          "exit_day": "2026-01-20",
+          "status": "STOPPED",
+          "outcome_r": "-1.09"
+        },
+        {
+          "symbol": "BNB-USD",
+          "signal_day": "2025-12-15",
+          "exit_day": "2026-01-31",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2026-01-20",
+          "exit_day": "2026-05-01",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2026-02-03",
+          "exit_day": "2026-03-03",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2026-02-12",
+          "exit_day": "2026-03-26",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2026-02-16",
+          "exit_day": "2026-02-26",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        }
+      ]
+    },
+    {
+      "train": [
+        "2022-09-28",
+        "2026-02-17"
+      ],
+      "test": [
+        "2026-02-18",
+        "2026-10-24"
+      ],
+      "scores": [
+        {
+          "version": "7975aa1af5a3",
+          "resolved": 105,
+          "expectancy_r": "0.14"
+        },
+        {
+          "version": "090f3d4d556d",
+          "resolved": 79,
+          "expectancy_r": "0.15"
+        },
+        {
+          "version": "d2611ed55597",
+          "resolved": 63,
+          "expectancy_r": "0.25"
+        },
+        {
+          "version": "e610b86f225f",
+          "resolved": 108,
+          "expectancy_r": "0.17"
+        },
+        {
+          "version": "52df5d457a0c",
+          "resolved": 81,
+          "expectancy_r": "0.20"
+        },
+        {
+          "version": "ee000d2e772d",
+          "resolved": 63,
+          "expectancy_r": "0.25"
+        },
+        {
+          "version": "f9b296cc8de6",
+          "resolved": 109,
+          "expectancy_r": "0.16"
+        },
+        {
+          "version": "ce6f5a8af9de",
+          "resolved": 82,
+          "expectancy_r": "0.14"
+        },
+        {
+          "version": "d44212838195",
+          "resolved": 64,
+          "expectancy_r": "0.25"
+        },
+        {
+          "version": "312ef8879384",
+          "resolved": 122,
+          "expectancy_r": "0.21"
+        },
+        {
+          "version": "ee3679f9961a",
+          "resolved": 91,
+          "expectancy_r": "0.11"
+        },
+        {
+          "version": "246bb77f533d",
+          "resolved": 69,
+          "expectancy_r": "0.25"
+        }
+      ],
+      "chosen": "d2611ed55597",
+      "test_trades": [
+        {
+          "symbol": "SPY",
+          "signal_day": "2026-02-23",
+          "exit_day": "2026-03-13",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2026-02-26",
+          "exit_day": "2026-03-09",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "1295.KL",
+          "signal_day": "2026-02-26",
+          "exit_day": "2026-03-02",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2026-03-03",
+          "exit_day": "2026-05-14",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2026-03-05",
+          "exit_day": "2026-05-22",
+          "status": "T2_HIT",
+          "outcome_r": "3.00"
+        },
+        {
+          "symbol": "1295.KL",
+          "signal_day": "2026-03-09",
+          "exit_day": "2026-07-07",
+          "status": "EXPIRED",
+          "outcome_r": "0.68"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2026-03-10",
+          "exit_day": "2026-04-13",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "1155.KL",
+          "signal_day": "2026-04-14",
+          "exit_day": "2026-06-03",
+          "status": "STOPPED",
+          "outcome_r": "-1.25"
+        },
+        {
+          "symbol": "5183.KL",
+          "signal_day": "2026-05-08",
+          "exit_day": "2026-06-16",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2026-06-05",
+          "exit_day": "2026-06-09",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2026-06-08",
+          "exit_day": "2026-10-06",
+          "status": "EXPIRED",
+          "outcome_r": "1.48"
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2026-06-10",
+          "exit_day": "2026-10-08",
+          "status": "EXPIRED",
+          "outcome_r": "1.48"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2026-06-22",
+          "exit_day": "2026-06-26",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "SPY",
+          "signal_day": "2026-06-29",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "5183.KL",
+          "signal_day": "2026-08-03",
+          "exit_day": "2026-09-01",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "AAPL",
+          "signal_day": "2026-08-12",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "1295.KL",
+          "signal_day": "2026-08-13",
+          "exit_day": "2026-08-28",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "1295.KL",
+          "signal_day": "2026-09-10",
+          "exit_day": "2026-10-07",
+          "status": "STOPPED",
+          "outcome_r": "-1.00"
+        },
+        {
+          "symbol": "MSFT",
+          "signal_day": "2026-09-11",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "ETH-USD",
+          "signal_day": "2026-09-15",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "SOL-USD",
+          "signal_day": "2026-09-16",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "BNB-USD",
+          "signal_day": "2026-09-28",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "BTC-USD",
+          "signal_day": "2026-09-28",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2026-10-12",
+          "exit_day": "2026-10-15",
+          "status": "STOPPED",
+          "outcome_r": "-1.23"
+        },
+        {
+          "symbol": "NVDA",
+          "signal_day": "2026-10-14",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        },
+        {
+          "symbol": "QQQ",
+          "signal_day": "2026-10-22",
+          "exit_day": null,
+          "status": "OPEN",
+          "outcome_r": null
+        }
+      ]
+    }
+  ],
+  "min_trades": 10,
+  "candidates": [
+    {
+      "version": "7975aa1af5a3",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "1.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "20",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "090f3d4d556d",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.0",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "20",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "d2611ed55597",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "20",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "e610b86f225f",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "1.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "25",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "52df5d457a0c",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.0",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "25",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "ee000d2e772d",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "25",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "f9b296cc8de6",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "1.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "30",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "ce6f5a8af9de",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.0",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "30",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "d44212838195",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "30",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "312ef8879384",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "1.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "35",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "ee3679f9961a",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.0",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "35",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    },
+    {
+      "version": "246bb77f533d",
+      "params": {
+        "atr_period": 14,
+        "atr_stop_multiple": "2.5",
+        "targets_r": [
+          "1.5",
+          "3.0"
+        ],
+        "min_reward_risk": "2.0",
+        "expiry_days": 120,
+        "ma_fast": 50,
+        "ma_slow": 200,
+        "trend_multiple": "1.05",
+        "floor_vs_ma_slow": "0.85",
+        "max_atr_pct": "8.0",
+        "rsi_period": 14,
+        "rsi_trigger": "35",
+        "support_distance_pct": "1.0",
+        "swing_radius": 2,
+        "fundamentals": {
+          "max_pe": "100",
+          "min_revenue_growth_pct": "-20"
+        }
+      }
+    }
+  ],
+  "assets": [
+    "1155.KL",
+    "1295.KL",
+    "5183.KL",
+    "AAPL",
+    "BNB-USD",
+    "BTC-USD",
+    "ETH-USD",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SOL-USD",
+    "SPY"
+  ],
+  "out_of_sample": {
+    "full_to_t2": {
+      "resolved": 74,
+      "open": 9,
+      "t1_touch_rate_pct": "37.8",
+      "win_rate_pct": "25.7",
+      "expectancy_r": "-0.11",
+      "expectancy_ci90_r": [
+        "-0.41",
+        "0.19"
+      ],
+      "max_drawdown_r": "-15.71",
+      "r_quartiles": [
+        "-1.00",
+        "-1.00",
+        "0.41"
+      ],
+      "median_sessions_held": 19
+    },
+    "half_at_t1_breakeven": {
+      "resolved": 74,
+      "open": 9,
+      "t1_touch_rate_pct": "37.8",
+      "win_rate_pct": "37.8",
+      "expectancy_r": "-0.09",
+      "expectancy_ci90_r": [
+        "-0.33",
+        "0.15"
+      ],
+      "max_drawdown_r": "-11.68",
+      "r_quartiles": [
+        "-1.00",
+        "-1.00",
+        "0.75"
+      ],
+      "median_sessions_held": 19
+    }
+  },
+  "random_entry_baseline": {
+    "runs": 100,
+    "mean_expectancy_r": "0.07",
+    "p95_r": "0.35"
+  },
+  "verdict": "does_not_beat_random",
+  "latest_choice": "d2611ed55597",
+  "assumptions": [
+    "Entry at the signal session's close; evaluation starts the next session.",
+    "When one bar touches both the stop and a target, the stop wins.",
+    "A gap below the stop fills at that session's open.",
+    "One open trade per asset at a time; no fees or slippage.",
+    "Fundamentals are not point-in-time, so the fundamentals rule is skipped."
+  ],
+  "caveats": [
+    "Survivorship: the watchlist was chosen today, so history favours assets that did well.",
+    "Small samples: a handful of trades says little; read the interval, not the point estimate.",
+    "Bars that failed quality checks were excluded, so some sessions are missing.",
+    "Past behaviour of these rules is not a promise about future results.",
+    "Every candidate tried raises the chance one looks good by luck; only the walk-forward result counts, and a wider sweep needs a stronger result."
+  ]
+}

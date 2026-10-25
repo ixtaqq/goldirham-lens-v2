@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from lens.bot.updates import Update, is_owner_private
-from lens.delivery.telegram import MessageSender
+from lens.delivery.telegram import MessageSender, TelegramError
 from lens.logs import get_logger
 from lens.settings import Secrets, Settings
 from lens.storage.db import Database
@@ -164,5 +164,9 @@ async def handle_update(update: Update, ctx: BotContext, messenger: Messenger) -
         error_id = secrets.token_hex(4)
         log.exception("bot handler failed", error_id=error_id, error=type(error).__name__)
         reply = Reply.text(f"Something went wrong (error {error_id}). The details are in the logs.")
-    await _send(messenger, ctx.owner_id, reply)
+    try:
+        await _send(messenger, ctx.owner_id, reply)
+    except TelegramError as error:
+        # An error here would make Telegram redeliver the update and run the command again.
+        log.warning("bot reply failed", error=type(error).__name__)
     return True

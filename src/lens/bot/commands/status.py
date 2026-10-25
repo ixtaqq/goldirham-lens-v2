@@ -20,14 +20,13 @@ RESEND_DEADLINE_SECONDS = 6.0
 
 @command("health", "/health", "On-time rate, last run, provider health, backups")
 async def health(ctx: BotContext, args: list[str]) -> Reply:
-    today = ctx.now.date()
+    owner = ctx.settings.owner
+    today = owner.today(ctx.now)
     async with ctx.db.session() as session:
         cycles = CycleRepo(session)
-        week = await cycles.on_time_rate(
-            ctx.owner_id, today - timedelta(days=7), deadline_hour_utc=0
-        )
+        week = await cycles.on_time_rate(ctx.owner_id, today - timedelta(days=7), owner.deadline_on)
         month = await cycles.on_time_rate(
-            ctx.owner_id, today - timedelta(days=30), deadline_hour_utc=0
+            ctx.owner_id, today - timedelta(days=30), owner.deadline_on
         )
         run = await session.scalar(
             select(PipelineRun)
@@ -59,7 +58,8 @@ async def health(ctx: BotContext, args: list[str]) -> Reply:
         )
     lines = [
         "<b>Health</b>",
-        f"On time (by 08:00): last 7 days {week[0]}/{week[1]} · last 30 days {month[0]}/{month[1]}",
+        f"On time (by {owner.delivery_deadline:%H:%M}): last 7 days {week[0]}/{week[1]} · "
+        f"last 30 days {month[0]}/{month[1]}",
     ]
     if run is not None:
         lines.append(

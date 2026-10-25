@@ -122,3 +122,63 @@ def test_doctor_reports_each_check(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "PASS  provider coinbase" in result.output
     assert "FAIL  telegram" in result.output
     assert "PASS  owner" in result.output
+
+
+def test_with_pg_env_runs_a_command_with_the_password_only_in_its_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import subprocess
+
+    seen: dict[str, Any] = {}
+
+    def fake_run(command: list[str], *, env: dict[str, str], check: bool) -> Any:
+        seen.update(command=command, env=env)
+        return subprocess.CompletedProcess(command, 7)
+
+    monkeypatch.setenv(
+        "DATABASE_URL_DIRECT", "postgresql+asyncpg://lens:s3cret-pw@db.example.co:5432/postgres"
+    )
+    monkeypatch.setattr(cli.subprocess, "run", fake_run)
+
+    result = runner.invoke(cli.app, ["ops", "with-pg-env", "--", "pg_dump", "--format=custom"])
+
+    assert result.exit_code == 7
+    assert seen["command"] == ["pg_dump", "--format=custom"]
+    assert seen["env"]["PGPASSWORD"] == "s3cret-pw"
+    assert "s3cret-pw" not in " ".join(seen["command"])
+    assert "s3cret-pw" not in result.output
+
+
+def test_research_writes_a_walk_forward_report(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _fake_collect(monkeypatch)
+    result = runner.invoke(
+        cli.app,
+        [
+            "research",
+            "--sweep",
+            "rsi_trigger=25,35",
+            "--sweep",
+            "atr_stop_multiple=2.0",
+            "--folds",
+            "2",
+            "--baseline-runs",
+            "3",
+            "--out",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    report = next(tmp_path.glob("research-pullback_in_uptrend-*.json"))
+    body = json.loads(report.read_text(encoding="utf-8"))
+    assert len(body["candidates"]) == 2
+    assert len(body["folds"]) == 2
+    assert "## Verdict" in report.with_suffix(".md").read_text(encoding="utf-8")
+
+
+def test_research_rejects_a_malformed_sweep(monkeypatch: pytest.MonkeyPatch) -> None:
+    _fake_collect(monkeypatch)
+    result = runner.invoke(cli.app, ["research", "--sweep", "rsi_trigger"])
+    assert result.exit_code != 0
+    assert "NAME=V1,V2" in result.output
