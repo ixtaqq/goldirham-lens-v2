@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pytest
+from alembic import command
+from alembic.config import Config
 
 from lens.ops.backup import (
     UnsafeTargetError,
     compare_manifests,
     ensure_drill_target,
     libpq_environment,
+    manifest,
 )
+from lens.storage.db import Database
+from tests.conftest import _ensure_database
 
 NOW = datetime(2026, 10, 16, 3, 0, tzinfo=UTC)
 
@@ -73,3 +80,39 @@ def test_libpq_environment_carries_the_connection_without_a_url() -> None:
         "PGSSLMODE": "require",
     }
     assert libpq_environment("postgres://u:p@localhost/lens")["PGPORT"] == "5432"
+
+
+@pytest.mark.db
+def test_manifest_covers_only_the_tables_that_exist(
+    migrated_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The backup before the first migration, and before any migration that adds a table."""
+    url = migrated_url.replace("/lens_test", "/lens_test_manifest", 1)
+    asyncio.run(_ensure_database(url))
+    monkeypatch.setenv("DATABASE_URL_DIRECT", url)
+    config = Config("alembic.ini")
+    config.cmd_opts = None
+    command.downgrade(config, "base")
+    try:
+        empty = asyncio.run(_manifest_of(url))
+        assert empty["tables"] == {}
+        assert empty["revision"] is None
+
+        command.upgrade(config, "0001")
+        older = asyncio.run(_manifest_of(url))
+        assert older["revision"] == "0001"
+        assert "level_alerts" not in older["tables"]
+        assert older["tables"]["briefings"] == {
+            "rows": 0,
+            "md5": "d41d8cd98f00b204e9800998ecf8427e",
+        }
+    finally:
+        command.downgrade(config, "base")
+
+
+async def _manifest_of(url: str) -> dict[str, Any]:
+    db = Database(url, rollback_only=True)
+    try:
+        return await manifest(db)
+    finally:
+        await db.dispose()
