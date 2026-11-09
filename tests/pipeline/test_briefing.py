@@ -157,8 +157,48 @@ def test_chunks_respect_the_limit_and_keep_tags_balanced(width: int) -> None:
     chunks = chunk(render_sections(compose(inputs, analyze(inputs))), width)
     assert all(len(c) <= width for c in chunks)
     for text in chunks:
-        for tag in ("b", "i", "code"):
+        for tag in ("b", "i", "code", "pre"):
             assert text.count(f"<{tag}>") == text.count(f"</{tag}>")
+        assert text.count("<blockquote") == text.count("</blockquote>")
+
+
+def test_an_oversized_block_is_closed_and_reopened_across_chunks() -> None:
+    rows = [f"ROW{i:03d}  USD 1,234.56  ▲0.4%" for i in range(40)]
+    section = "<b>Market</b> · risk-on\n<pre>" + "\n".join(rows) + "</pre>"
+    chunks = chunk([section], 300)
+    assert len(chunks) > 1
+    assert all(len(c) <= 300 for c in chunks)
+    assert all(c.count("<pre>") == c.count("</pre>") == 1 for c in chunks)
+    inner = "\n".join(c.split("<pre>")[1].removesuffix("</pre>") for c in chunks)
+    assert inner.split("\n") == rows
+
+
+def test_the_first_lines_say_what_needs_attention() -> None:
+    quiet = _text(make_inputs()).split("\n")
+    assert quiet[1] == "Quiet day. Nothing to act on."
+    inputs = make_inputs(active_versions=(active_pullback_version(),), transactions=HOLDINGS, fx=FX)
+    busy = _text(inputs).split("\n")
+    assert busy[1] == "2 holdings to review · 1 new setup."
+
+
+def test_a_degraded_briefing_claims_nothing_about_holdings() -> None:
+    inputs = make_inputs(
+        mode="degraded",
+        degraded_reason="The database was unreachable.",
+        sources_unavailable=("database",),
+        context=ContextIn(),
+    )
+    assert "Nothing to act on" not in _text(inputs)
+
+
+def test_data_notes_and_headlines_fold_away_and_market_reads_as_a_table() -> None:
+    sections = render_sections(compose(make_inputs(), analyze(make_inputs())))
+    assert sections[-2].startswith("<blockquote expandable><b>Data notes</b> · 2\n")
+    assert sections[-3].startswith("<blockquote expandable><b>Headlines</b> · context only\n")
+    market = next(s for s in sections if s.startswith("<b>Market</b>"))
+    assert market.startswith("<b>Market</b> · risk-on\n<pre>")
+    assert "SPY      USD     647.73  ▲0.1%" in market
+    assert "Crypto mood    ▰▰▰▰▰▰▱▱▱▱  63 Greed" in market
 
 
 def test_inputs_round_trip_through_packing() -> None:

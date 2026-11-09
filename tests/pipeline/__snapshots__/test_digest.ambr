@@ -2,35 +2,43 @@
 # name: test_sunday_briefing_golden
   '''
   <b>Goldirham Lens</b> · Sun 18 Oct 2026
-  Data as of Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
+  2 holdings to review.
+  Closes from Crypto (UTC) 15 Oct · Bursa 15 Oct · US 15 Oct
   
-  <b>Data status</b>
-  • NVDA: fewer verified sessions than required
-  • pullback_in_uptrend 52df5d457a0c: strategy has no backtest report yet, so it is not live
+  <b>Market</b> · risk-on
+  <pre>SPY      USD     647.73  ▲0.1%
+  BTC-USD  USD  77,727.97  ▲0.1%</pre>
+  <pre>Above 200-day  ▰▰▰▰▰▰▰▰▰▱  85.7%
+  Crypto mood    ▰▰▰▰▰▰▱▱▱▱  63 Greed</pre>
   
   <b>Portfolio</b> · MYR 25,079.10
   FX dated 15 Oct
-  <b>REDUCE</b> 1155.KL MYR 10.24 (15 Oct) +0.0% · 40.8% of portfolio · +11.2% unrealised
-     position is above the concentration cap. Review stop MYR 9.98.
-  <b>REDUCE</b> AAPL USD 167.78 (15 Oct) +0.2% · 59.2% of portfolio · +52.5% unrealised
-     position is above the concentration cap. Review stop USD 162.88.
+  
+  <b>REDUCE</b> 1155.KL · MYR 10.24 ▬0.0%
+  40.8% of portfolio · +11.2% unrealised · close 15 Oct
+  Position is above the concentration cap. Review stop MYR 9.98.
+  
+  <b>REDUCE</b> AAPL · USD 167.78 ▲0.2%
+  59.2% of portfolio · +52.5% unrealised · close 15 Oct
+  Position is above the concentration cap. Review stop USD 162.88.
+  
   Exposure: stock 100.0%
   
   <b>Setups</b>
   No new setups today. Most days look like this, and that is the point.
-  
-  <b>Market</b>
-  Regime: risk-on · 85.7% of watchlist above its 200-day average
-  SPY USD 647.73 +0.1% · BTC-USD USD 77,727.97 +0.1%
-  Crypto Fear &amp; Greed: 63 (Greed)
-  Headlines (context only):
-  • Markets steady ahead of rate decision <i>(Demo Wire)</i>
   
   <b>This week</b> · 8 Oct to 15 Oct
   Benchmarks: SPY +0.5% · BTC-USD +0.5%
   Holdings: 1155.KL +0.2% · AAPL +1.0%
   Up most: MSFT +10.0% · AAPL +1.0% · NVDA +1.0%
   Down most: QQQ −9.2% · 5183.KL −5.0%
+  
+  <blockquote expandable><b>Headlines</b> · context only
+  • Markets steady ahead of rate decision <i>(Demo Wire)</i></blockquote>
+  
+  <blockquote expandable><b>Data notes</b> · 2
+  • NVDA: fewer verified sessions than required
+  • pullback_in_uptrend 52df5d457a0c: strategy has no backtest report yet, so it is not live</blockquote>
   
   <i>Research and decision support only. Not financial advice. Goldirham Lens never places trades. Targets are scenarios, and gaps can exceed a planned stop.</i>
   <code>cycle 3f2a9c1e · pullback_in_uptrend 52df5d457a0c</code>

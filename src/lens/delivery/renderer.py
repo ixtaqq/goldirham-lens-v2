@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
-from functools import partial
+from collections.abc import Sequence
+from decimal import ROUND_HALF_UP, Decimal
 
 from lens.delivery.format import (
     MARKET_LABELS,
+    amount,
     esc,
     long_day,
     money,
+    move,
     pct,
     price,
     r_multiple,
@@ -18,7 +20,7 @@ from lens.delivery.format import (
 )
 from lens.domain.briefing import BriefingDocument, ChangeKind, Mode, WeekLine
 from lens.domain.evaluation import EventKind
-from lens.domain.holdings import MarkStatus
+from lens.domain.holdings import MarkStatus, ReviewAction
 from lens.domain.reasons import LABELS, ReasonCode
 
 TELEGRAM_LIMIT = 4096
@@ -54,44 +56,98 @@ _SHORT_REASON = {
 }
 
 
+def _plural(count: int, one: str, many: str) -> str:
+    return f"{count} {one if count == 1 else many}"
+
+
+def _summary(doc: BriefingDocument) -> str | None:
+    """One line on what needs the owner today, counted from the document. None when degraded."""
+    if doc.mode is Mode.DEGRADED:
+        return None
+    reviews = (
+        sum(1 for h in doc.portfolio.holdings if h.review is not ReviewAction.HOLD)
+        if doc.portfolio
+        else 0
+    )
+    counts = [
+        (reviews, "holding to review", "holdings to review"),
+        (len(doc.setups), "new setup", "new setups"),
+        (len(doc.level_alerts), "price alert reached", "price alerts reached"),
+        (len(doc.open_signals), "signal update", "signal updates"),
+    ]
+    parts = [_plural(n, one, many) for n, one, many in counts if n]
+    return " · ".join(parts) + "." if parts else "Quiet day. Nothing to act on."
+
+
 def _header(doc: BriefingDocument) -> str:
     lines = [f"<b>Goldirham Lens</b> · {long_day(doc.briefing_date)}"]
-    if doc.data_as_of:
-        lines.append(
-            "Data as of "
-            + " · ".join(
-                f"{MARKET_LABELS[d.market]} {short_day(d.session)}"
-                for d in doc.data_as_of
-                if d.session
-            )
-        )
     if doc.mode is Mode.DEGRADED:
         lines.append(
             f"<b>Degraded briefing.</b> {esc(doc.degraded_reason or 'The database was unreachable.')}"
         )
     if doc.late:
         lines.append("<i>Sent late: the scheduled run did not finish by 08:00.</i>")
+    summary = _summary(doc)
+    if summary:
+        lines.append(summary)
+    if doc.data_as_of:
+        lines.append(
+            "Closes from "
+            + " · ".join(
+                f"{MARKET_LABELS[d.market]} {short_day(d.session)}"
+                for d in doc.data_as_of
+                if d.session
+            )
+        )
     return "\n".join(lines)
 
 
-def _data_status(doc: BriefingDocument) -> str:
+def _table(rows: Sequence[Sequence[str]], right: frozenset[int]) -> str:
+    """Rows as a monospace block, columns padded to line up. Escaped after padding."""
+    widths = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
+    lines = [
+        "  ".join(
+            cell.rjust(width) if i in right else cell.ljust(width)
+            for i, (cell, width) in enumerate(zip(row, widths, strict=True))
+        ).rstrip()
+        for row in rows
+    ]
+    return "<pre>" + esc("\n".join(lines)) + "</pre>"
+
+
+def _bar(value: Decimal) -> str:
+    """A 0 to 100 reading as ten segments."""
+    filled = int((value / 10).quantize(Decimal(1), ROUND_HALF_UP))
+    return "▰" * filled + "▱" * (10 - filled)
+
+
+def _data_notes(doc: BriefingDocument) -> str:
     if doc.healthy:
         return "Data: every source verified."
-    lines = ["<b>Data status</b>"]
     grouped: dict[tuple[ReasonCode, ...], list[str]] = {}
     for issue in doc.data_issues:
         grouped.setdefault(issue.reasons, []).append(issue.subject)
-    for reasons, subjects in grouped.items():
-        text = "; ".join(LABELS[r] for r in reasons) or "check required"
-        lines.append(f"• {esc(', '.join(subjects))}: {esc(text)}")
-    lines.extend(f"• {esc(source)}: unavailable this run" for source in doc.sources_unavailable)
-    return "\n".join(lines)
+    notes = [
+        f"• {esc(', '.join(subjects))}: {esc('; '.join(LABELS[r] for r in reasons) or 'check required')}"
+        for reasons, subjects in grouped.items()
+    ]
+    notes += [f"• {esc(source)}: unavailable this run" for source in doc.sources_unavailable]
+    return (
+        f"<blockquote expandable><b>Data notes</b> · {len(notes)}\n"
+        + "\n".join(notes)
+        + "</blockquote>"
+    )
+
+
+def _sentence(reasons: tuple[ReasonCode, ...]) -> str:
+    text = "; ".join(LABELS[r] for r in reasons)
+    return text[:1].upper() + text[1:]
 
 
 def _portfolio(doc: BriefingDocument) -> str | None:
     section = doc.portfolio
     if section is None:
-        return esc(doc.portfolio_note) if doc.portfolio_note else None
+        return f"<b>Portfolio</b>\n{esc(doc.portfolio_note)}" if doc.portfolio_note else None
     lines = [f"<b>Portfolio</b> · {money(section.total_base, section.base_currency)}"]
     if section.fx_days:
         lines.append("FX dated " + ", ".join(short_day(d) for d in section.fx_days))
@@ -102,33 +158,35 @@ def _portfolio(doc: BriefingDocument) -> str | None:
         )
     for line in section.holdings:
         mark = (
-            f"{price(line.mark, line.currency)} ({short_day(line.mark_day)})"
-            if line.mark is not None and line.mark_day is not None
+            f"{price(line.mark, line.currency)}"
+            + (f" {move(line.day_change_pct)}" if line.day_change_pct is not None else "")
+            if line.mark is not None
             else "no verified price"
         )
-        change = f" {signed_pct(line.day_change_pct)}" if line.day_change_pct is not None else ""
-        weight = f" · {pct(line.weight_pct)} of portfolio" if line.weight_pct is not None else ""
-        pnl = (
-            f" · {signed_pct(line.unrealized_pct)} unrealised"
+        facts = [
+            f"{pct(line.weight_pct)} of portfolio" if line.weight_pct is not None else None,
+            f"{signed_pct(line.unrealized_pct)} unrealised"
             if line.unrealized_pct is not None
-            else ""
-        )
-        lines.append(
-            f"<b>{line.review.value}</b> {esc(line.symbol)} {mark}{change}{_MARK[line.mark_status]}{weight}{pnl}"
-        )
-        if line.review.value != "HOLD":
-            why = "; ".join(LABELS[r] for r in line.review_reasons)
+            else None,
+            f"close {short_day(line.mark_day)}{_MARK[line.mark_status]}"
+            if line.mark_day is not None
+            else None,
+        ]
+        lines += ["", f"<b>{line.review.value}</b> {esc(line.symbol)} · {mark}"]
+        lines.append(" · ".join(f for f in facts if f))
+        if line.review is not ReviewAction.HOLD:
             stop = (
                 f" Review stop {price(line.review_stop, line.currency)}."
                 if line.review_stop is not None
                 else ""
             )
-            lines.append(f"   {esc(why)}.{stop}")
+            lines.append(f"{esc(_sentence(line.review_reasons))}.{stop}")
     if section.exposure_by_asset_class:
-        lines.append(
+        lines += [
+            "",
             "Exposure: "
-            + " · ".join(f"{esc(k)} {pct(v)}" for k, v in section.exposure_by_asset_class.items())
-        )
+            + " · ".join(f"{esc(k)} {pct(v)}" for k, v in section.exposure_by_asset_class.items()),
+        ]
     return "\n".join(lines)
 
 
@@ -159,14 +217,18 @@ def _setups(doc: BriefingDocument) -> str:
         return (
             "<b>Setups</b>\nNo new setups today. Most days look like this, and that is the point."
         )
-    lines = [f"<b>Setups</b> ({len(doc.setups)})"]
+    lines = [f"<b>Setups</b> · {len(doc.setups)} new"]
     for s in doc.setups:
-        level = partial(_level, s.entry, s.currency)
+        ladder = [
+            ("T2", price(s.t2, s.currency), _away(s.t2, s.entry)),
+            ("T1", price(s.t1, s.currency), _away(s.t1, s.entry)),
+            ("Entry", price(s.entry, s.currency), ""),
+            ("Stop", price(s.stop, s.currency), _away(s.stop, s.entry)),
+        ]
         lines += [
             "",
             f"<b>{esc(s.symbol)}</b> {esc(s.name)} · {esc(s.strategy)}",
-            f"Entry {price(s.entry, s.currency)} · {level('Stop', s.stop)}",
-            f"{level('T1', s.t1)} · {level('T2', s.t2)}",
+            _table(ladder, right=frozenset({1, 2})),
             f"Size {pct(s.size_pct)} of equity{' (capped)' if s.size_capped else ''} · reward to risk {s.reward_risk}",
             "Why: " + esc(", ".join(_SHORT_REASON.get(r, LABELS[r]) for r in s.reasons)),
             f"Invalidation: a close below {price(s.stop, s.currency)}.",
@@ -175,8 +237,8 @@ def _setups(doc: BriefingDocument) -> str:
     return "\n".join(lines)
 
 
-def _level(entry: Decimal, currency: str, name: str, value: Decimal) -> str:
-    return f"{name} {price(value, currency)} ({signed_pct((value / entry - 1) * 100)})"
+def _away(level: Decimal, entry: Decimal) -> str:
+    return signed_pct((level / entry - 1) * 100)
 
 
 def _signals(doc: BriefingDocument) -> str | None:
@@ -198,30 +260,45 @@ def _signals(doc: BriefingDocument) -> str | None:
 
 def _market(doc: BriefingDocument) -> str:
     market = doc.market
-    lines = ["<b>Market</b>"]
-    breadth = (
-        f" · {pct(market.breadth_pct)} of watchlist above its 200-day average"
-        if market.breadth_pct is not None
-        else ""
-    )
-    lines.append(f"Regime: {_REGIME[market.regime]}{breadth}")
+    lines = [f"<b>Market</b> · {_REGIME[market.regime]}"]
     if market.benchmarks:
-        lines.append(
-            " · ".join(
-                f"{esc(b.symbol)} {price(b.close, b.currency)}"
-                + (f" {signed_pct(b.change_pct)}" if b.change_pct is not None else "")
-                for b in market.benchmarks
+        rows = [
+            (
+                b.symbol,
+                b.currency,
+                amount(b.close),
+                move(b.change_pct) if b.change_pct is not None else "",
+            )
+            for b in market.benchmarks
+        ]
+        lines.append(_table(rows, right=frozenset({2})))
+    gauges = []
+    if market.breadth_pct is not None:
+        gauges.append(("Above 200-day", _bar(market.breadth_pct), pct(market.breadth_pct)))
+    if market.fear_greed is not None:
+        gauges.append(
+            (
+                "Crypto mood",
+                _bar(Decimal(market.fear_greed)),
+                f"{market.fear_greed} {market.fear_greed_label or ''}".rstrip(),
             )
         )
-    if market.fear_greed is not None:
-        lines.append(
-            f"Crypto Fear &amp; Greed: {market.fear_greed} ({esc(market.fear_greed_label or '')})"
-        )
-    limit = 3 if doc.detail == "concise" else 5
-    if market.headlines:
-        lines.append("Headlines (context only):")
-        lines += [f"• {esc(h.title)} <i>({esc(h.source)})</i>" for h in market.headlines[:limit]]
+    if gauges:
+        lines.append(_table(gauges, right=frozenset()))
     return "\n".join(lines)
+
+
+def _headlines(doc: BriefingDocument) -> str | None:
+    limit = 3 if doc.detail == "concise" else 5
+    if not doc.market.headlines:
+        return None
+    return (
+        "<blockquote expandable><b>Headlines</b> · context only\n"
+        + "\n".join(
+            f"• {esc(h.title)} <i>({esc(h.source)})</i>" for h in doc.market.headlines[:limit]
+        )
+        + "</blockquote>"
+    )
 
 
 def _level_alerts(doc: BriefingDocument) -> str | None:
@@ -286,15 +363,16 @@ def _footer(doc: BriefingDocument) -> str:
 def render_sections(doc: BriefingDocument) -> list[str]:
     parts = [
         _header(doc),
-        _data_status(doc),
+        _market(doc),
         _portfolio(doc),
         _changes(doc),
         _level_alerts(doc),
         _setups(doc),
         _signals(doc),
-        _market(doc),
         _week(doc),
         _narrative(doc),
+        _headlines(doc),
+        _data_notes(doc),
         _footer(doc),
     ]
     return [p for p in parts if p]

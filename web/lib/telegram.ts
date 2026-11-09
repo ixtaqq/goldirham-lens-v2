@@ -1,7 +1,7 @@
-// Parses the Telegram HTML subset the Python renderer emits (b, i, code) into a tree.
-// Anything else is kept as literal text, so a stray tag can never become markup.
+// Parses the Telegram HTML subset the Python renderer emits (b, i, code, pre, blockquote) into a
+// tree. Anything else is kept as literal text, so a stray tag can never become markup.
 
-export type Mark = "b" | "i" | "code";
+export type Mark = "b" | "i" | "code" | "pre" | "blockquote";
 
 export type TgNode = { kind: "text"; text: string } | { kind: Mark; children: TgNode[] };
 
@@ -17,7 +17,7 @@ export function decode(text: string): string {
   return text.replace(/&(amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity] ?? entity);
 }
 
-const TAG = /<(\/?)(b|i|code)>/g;
+const TAG = /<(\/?)(b|i|code|pre|blockquote)(?: expandable)?>/g;
 
 export function parse(html: string): TgNode[] {
   const root: TgNode[] = [];
@@ -57,13 +57,15 @@ export type SectionKind =
   | "signals"
   | "market"
   | "narrative"
+  | "headlines"
   | "footer"
   | "other";
 
 const SECTION_PREFIXES: [string, SectionKind][] = [
   ["<b>Goldirham Lens</b>", "header"],
   ["Data:", "data"],
-  ["<b>Data status</b>", "data"],
+  ["<blockquote expandable><b>Data notes</b>", "data"],
+  ["<blockquote expandable><b>Headlines</b>", "headlines"],
   ["<b>Portfolio</b>", "portfolio"],
   ["<b>What changed</b>", "changes"],
   ["<b>Setups</b>", "setups"],

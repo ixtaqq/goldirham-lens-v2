@@ -15,10 +15,21 @@ def esc(text: object) -> str:
     return html.escape(str(text), quote=False)
 
 
-def price(value: Decimal, currency: str) -> str:
+def amount(value: Decimal) -> str:
     magnitude = abs(value)
     places = 2 if magnitude >= 1 else 4 if magnitude >= Decimal("0.01") else 6
-    return f"{currency} {value:,.{places}f}"
+    return f"{value:,.{places}f}"
+
+
+def price(value: Decimal, currency: str) -> str:
+    return f"{currency} {amount(value)}"
+
+
+def move(value: Decimal) -> str:
+    """A day's change as an arrow and its size: ▲0.3%, ▼1.2%, ▬0.0% when it rounds to nothing."""
+    size = f"{abs(value):.1f}"
+    arrow = "▬" if size == "0.0" else "▲" if value > 0 else "▼"
+    return f"{arrow}{size}%"
 
 
 def money(value: Decimal, currency: str) -> str:
