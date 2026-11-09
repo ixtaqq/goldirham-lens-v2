@@ -152,6 +152,22 @@
     color: var(--color-fog);
     font-size: 0.78rem;
   }
+  .tg pre {
+    margin: 0;
+    padding: 0.35rem 0.6rem;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    white-space: pre;
+    background: color-mix(in oklab, var(--color-paper) 5%, transparent);
+  }
+  .tg blockquote {
+    margin: 0;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--color-rule-strong);
+    color: var(--color-fog);
+  }
 }
 
 /* ---------------------------------------------------------------------------------------------

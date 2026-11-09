@@ -9,6 +9,8 @@ function render(nodes: TgNode[], prefix: string): ReactNode[] {
     const children = render(node.children, `${key}.`);
     if (node.kind === "b") return <strong key={key}>{children}</strong>;
     if (node.kind === "i") return <em key={key}>{children}</em>;
+    if (node.kind === "pre") return <pre key={key}>{children}</pre>;
+    if (node.kind === "blockquote") return <blockquote key={key}>{children}</blockquote>;
     return <code key={key}>{children}</code>;
   });
 }

@@ -2,6 +2,21 @@
 
 All dates are Asia/Kuala_Lumpur. Nothing here has been deployed or committed yet.
 
+## Unreleased: calm ledger briefing (2026-11-09)
+
+### Changed
+
+- A line under the date says what needs the owner today, counted from the document, for example "2 holdings to review · 1 new setup." or "Quiet day. Nothing to act on." A degraded briefing leaves it out, because it cannot see the holdings.
+- Market closes and setup levels are monospace tables, so the numbers line up. A day's move reads ▲0.3%, ▼1.2% or ▬0.0%. Breadth and the crypto Fear and Greed index each get a ten-segment bar. The market section now comes straight after the header.
+- Each holding takes up to three lines: review and price, then weight, gain and close date, then the reason and review stop.
+- Headlines and data notes move to the end as expandable quotes. Every note is still sent, and Telegram opens the quote on a tap. This departs from the build prompt, which put data status second. The degraded and late banners stay at the top.
+- The chunker closes a `pre` or `blockquote` where it splits an oversized section and reopens it in the next message.
+- The showcase parser renders `pre` and `blockquote`, and `web/data/demo.json` is regenerated.
+
+### Replay
+
+Only rendering changed. Briefings stored on 2026-11-08 and 2026-11-09 now replay as "text differs, document matches", and `/briefing` shows their stored documents in the new layout. The golden files are updated.
+
 ## Unreleased: first deploy (2026-10-25)
 
 ### Fixed
